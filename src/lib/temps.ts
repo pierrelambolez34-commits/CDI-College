@@ -26,3 +26,9 @@ export type PlageSimple = { id: string; jour: number; debut: number; fin: number
 export function plageEnCours<T extends PlageSimple>(plages: T[], jourSemaine: number, minute: number): T | null {
   return plages.find((p) => p.jour === jourSemaine && minute >= p.debut && minute < p.fin) ?? null;
 }
+
+/** Année scolaire en cours : « 2026-2027 » à partir d'août 2026. */
+export function anneeScolaireCourante(i: Instant = instantParis()) {
+  const an = Number(i.jour.slice(0, 4)), mois = Number(i.jour.slice(5, 7));
+  return mois >= 8 ? `${an}-${an + 1}` : `${an - 1}-${an}`;
+}

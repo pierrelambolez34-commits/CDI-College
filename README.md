@@ -8,7 +8,16 @@ Elle est **multi-collèges** : chaque collège a ses propres élèves, horaires,
 | **Saisie** | tous les comptes du collège | Déclarer l'entrée d'un élève en 3 touches : quelques lettres, Entrée, chiffre du motif |
 | **Statistiques** | tous les comptes du collège | Motifs, moments de fréquentation, évolution, élèves touchés, export CSV |
 | **Paramétrage** | administrateurs du collège | Établissement, horaires du CDI, motifs, import des élèves, comptes |
-| **Collèges** (`/admin`) | super-administrateur (toi) | Créer un nouveau collège client et son premier compte |
+| **Collèges** (`/admin`) | super-administrateur (toi) | Confirmer ou refuser les demandes de création de collège, suivre les collèges ouverts |
+
+## Comment un nouveau collège arrive
+
+1. Sur l'écran de connexion, le professeur documentaliste clique sur **Création d'un collège** et remplit le formulaire : nom, ville, code postal, académie, code UAI (facultatif) et son e-mail.
+2. Tu reçois un e-mail avec un lien vers l'application. Dans **Collèges**, la demande apparaît dans « Demandes à traiter ».
+3. Tu cliques sur **Confirmer la création** : le collège est créé avec des horaires et des motifs par défaut, et le documentaliste reçoit un e-mail d'invitation.
+4. Il clique sur le lien (valable 7 jours, une seule fois), choisit et confirme son mot de passe, puis arrive directement dans le paramétrage.
+
+Si le lien a expiré, le bouton **Renvoyer l'invitation** dans la liste des collèges en envoie un nouveau.
 
 ---
 
@@ -38,13 +47,14 @@ Ouvre ensuite http://localhost:3000.
 
 - Collège de démonstration : `demo@exemple.fr` / `demonstration` (administrateur) ou `assistant@exemple.fr` / `demonstration` (saisie seulement).
 - Super-administrateur : l'adresse et le mot de passe indiqués dans ton fichier `.env`. **Change le mot de passe** avant toute mise en ligne.
+- En développement, aucun e-mail n'est réellement envoyé : ils s'affichent dans le terminal où tourne `npm run dev`, avec leurs liens cliquables.
 
 ## 2. Les commandes utiles
 
 | Commande | Effet |
 |---|---|
 | `npm run dev` | Lance l'application en mode développement (elle se recharge à chaque modification) |
-| `npm test` | Lance les tests automatiques (17 tests, dont le cloisonnement entre collèges) |
+| `npm test` | Lance les tests automatiques (21 tests : cloisonnement entre collèges, parcours de création d'un collège…) |
 | `npm run typecheck` | Vérifie le code TypeScript sans le lancer |
 | `npm run build` puis `npm start` | Version de production |
 | `npm run db:generate` | Après une modification de `src/db/schema.ts` : crée le fichier de migration |
@@ -62,13 +72,18 @@ src/
     data/eleves.ts        Import annuel des élèves
     data/passages.ts      Enregistrement et annulation des passages
     data/stats.ts         Calcul des statistiques et export CSV
+    data/demandes.ts      Demandes de création de collège, invitations, choix du mot de passe
+    email.ts              Envoi des e-mails (SMTP), modèle de mise en page
+    limite.ts             Limite du nombre de tentatives (connexion, demandes)
     csv.ts                Lecture du fichier Pronote/SIECLE (s'exécute dans le navigateur)
     horaires.ts           Vérification des plages horaires
     temps.ts              Heure de Paris, plage en cours
     validation.ts         Contrôle des données reçues par le serveur
   app/
     connexion/            Page de connexion
-    admin/                Espace super-administrateur
+    creer-un-college/     Formulaire public de demande de création
+    activation/[jeton]/   Choix du mot de passe depuis le lien d'invitation
+    admin/                Espace super-administrateur (demandes et collèges)
     (app)/saisie/         Écran de saisie (Saisie.tsx contient toute la logique clavier)
     (app)/statistiques/   Tableau de bord et export CSV
     (app)/parametrage/    Les 5 rubriques du paramétrage
@@ -99,14 +114,14 @@ drizzle/                  Fichiers de migration SQL (générés)
 L'application a besoin d'un hébergeur Node.js et d'une base PostgreSQL. Par exemple chez **Scalingo** ou **Clever Cloud** (hébergement en France) :
 
 1. Crée une application Node.js et ajoute une base PostgreSQL.
-2. Renseigne les variables `DATABASE_URL`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` et `NODE_ENV=production`.
+2. Renseigne les variables `DATABASE_URL`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`, `APP_URL` (l'adresse publique, pour les liens des e-mails), `SMTP_URL`, `MAIL_FROM` et `NODE_ENV=production`.
+   Pour `SMTP_URL`, un service d'envoi français comme Brevo fournit des identifiants SMTP : `smtps://identifiant:motdepasse@smtp-relay.brevo.com:465`.
 3. Commande de construction : `npm run build` ; commande de démarrage : `npm run db:migrate && npm start`.
 4. Une fois en ligne, lance une fois `npm run db:superadmin` depuis la console de l'hébergeur.
 
 ## 7. Prochaines étapes possibles
 
-- Limiter les tentatives de connexion (protection contre les essais de mots de passe).
-- « Mot de passe oublié » par e-mail.
+- « Mot de passe oublié » par e-mail (le mécanisme de lien à usage unique existe déjà).
 - Rapport d'activité annuel en PDF.
 - Mode hors-ligne (saisie conservée si le Wi-Fi coupe).
 - Lecture des cartes élèves par douchette (code-barres).

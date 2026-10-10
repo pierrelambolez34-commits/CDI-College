@@ -8,30 +8,41 @@ import bcrypt from "bcryptjs";
 export class ErreurMetier extends Error {}
 
 export type NouveauCollege = {
-  nom: string; uai: string; commune: string; anneeScolaire: string;
-  admin: { email: string; nom: string; motDePasse: string };
+  nom: string; uai?: string | null; commune: string; codePostal?: string; academie?: string; anneeScolaire: string;
+  /** Sans mot de passe, le compte attend que la personne le choisisse via le lien d'invitation. */
+  admin: { email: string; nom: string; motDePasse?: string };
 };
+
+/** « 0341234a » → « 0341234A » ; chaîne vide → null. Lève une erreur si le format est faux. */
+export function normaliserUai(uai: string | null | undefined): string | null {
+  const u = (uai ?? "").trim().toUpperCase();
+  if (!u) return null;
+  if (!/^\d{7}[A-Z]$/.test(u)) throw new ErreurMetier("Le code UAI doit comporter 7 chiffres suivis d'une lettre, par exemple 0341234A.");
+  return u;
+}
 
 /** Crée un collège avec un paramétrage par défaut et son premier compte administrateur. */
 export async function creerCollege(c: NouveauCollege) {
-  const uai = c.uai.trim().toUpperCase();
-  if (!/^\d{7}[A-Z]$/.test(uai)) throw new ErreurMetier("Le code UAI doit comporter 7 chiffres suivis d'une lettre, par exemple 0341234A.");
-  if (c.admin.motDePasse.length < 10) throw new ErreurMetier("Le mot de passe doit comporter au moins 10 caractères.");
+  const uai = normaliserUai(c.uai);
+  if (c.admin.motDePasse !== undefined && c.admin.motDePasse.length < 10) throw new ErreurMetier("Le mot de passe doit comporter au moins 10 caractères.");
   const email = c.admin.email.trim().toLowerCase();
   const [existe] = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, email));
   if (existe) throw new ErreurMetier("Un compte existe déjà avec cette adresse e-mail.");
-  const [dejaUai] = await db.select({ id: schema.colleges.id }).from(schema.colleges).where(eq(schema.colleges.uai, uai));
-  if (dejaUai) throw new ErreurMetier("Un collège existe déjà avec ce code UAI.");
+  if (uai) {
+    const [dejaUai] = await db.select({ id: schema.colleges.id }).from(schema.colleges).where(eq(schema.colleges.uai, uai));
+    if (dejaUai) throw new ErreurMetier("Un collège existe déjà avec ce code UAI.");
+  }
 
-  const hash = await bcrypt.hash(c.admin.motDePasse, 10);
+  const hash = c.admin.motDePasse ? await bcrypt.hash(c.admin.motDePasse, 10) : null;
   return db.transaction(async (tx) => {
     const [col] = await tx.insert(schema.colleges).values({
-      nom: c.nom.trim(), uai, commune: c.commune.trim(), anneeScolaire: c.anneeScolaire, typesPlage: TYPES_PLAGE_DEFAUT,
+      nom: c.nom.trim(), uai, commune: c.commune.trim(), codePostal: (c.codePostal ?? "").trim(), academie: c.academie ?? "",
+      anneeScolaire: c.anneeScolaire, typesPlage: TYPES_PLAGE_DEFAUT,
     }).returning();
     await tx.insert(schema.plages).values(plagesDefaut().map((p) => ({ ...p, collegeId: col.id })));
     await tx.insert(schema.motifs).values(MOTIFS_DEFAUT.map((libelle, i) => ({ collegeId: col.id, libelle, ordre: i + 1 })));
-    await tx.insert(schema.users).values({ collegeId: col.id, email, nom: c.admin.nom.trim(), passwordHash: hash, role: "admin" });
-    return col;
+    const [admin] = await tx.insert(schema.users).values({ collegeId: col.id, email, nom: c.admin.nom.trim(), passwordHash: hash, role: "admin" }).returning({ id: schema.users.id });
+    return { ...col, adminId: admin.id };
   });
 }
 
@@ -45,13 +56,17 @@ export async function lireCollege(collegeId: string) {
   return c;
 }
 
-export async function modifierEtablissement(collegeId: string, d: { nom: string; uai: string; commune: string; anneeScolaire: string }) {
-  const uai = d.uai.trim().toUpperCase();
+export async function modifierEtablissement(collegeId: string, d: { nom: string; uai: string; commune: string; codePostal: string; academie: string; anneeScolaire: string }) {
   if (!d.nom.trim()) throw new ErreurMetier("Indiquez le nom du collège.");
-  if (!/^\d{7}[A-Z]$/.test(uai)) throw new ErreurMetier("Le code UAI doit comporter 7 chiffres suivis d'une lettre, par exemple 0341234A.");
+  const uai = normaliserUai(d.uai);
   if (!/^\d{4}-\d{4}$/.test(d.anneeScolaire)) throw new ErreurMetier("L'année scolaire doit être au format 2026-2027.");
+  if (d.codePostal.trim() && !/^\d{5}$/.test(d.codePostal.trim())) throw new ErreurMetier("Le code postal doit comporter 5 chiffres.");
+  if (uai) {
+    const [autre] = await db.select({ id: schema.colleges.id }).from(schema.colleges).where(eq(schema.colleges.uai, uai));
+    if (autre && autre.id !== collegeId) throw new ErreurMetier("Ce code UAI est déjà utilisé par un autre collège.");
+  }
   await db.update(schema.colleges)
-    .set({ nom: d.nom.trim(), uai, commune: d.commune.trim(), anneeScolaire: d.anneeScolaire })
+    .set({ nom: d.nom.trim(), uai, commune: d.commune.trim(), codePostal: d.codePostal.trim(), academie: d.academie, anneeScolaire: d.anneeScolaire })
     .where(eq(schema.colleges.id, collegeId));
 }
 

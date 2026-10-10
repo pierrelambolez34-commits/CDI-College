@@ -16,7 +16,7 @@ export async function actionEtablissement(_: unknown, f: FormData) {
   const u = await admin();
   const v = (k: string) => String(f.get(k) ?? "");
   const r = await executer(() => modifierEtablissement(u.collegeId, {
-    nom: v("nom"), uai: v("uai"), commune: v("commune"), anneeScolaire: v("annee"),
+    nom: v("nom"), uai: v("uai"), commune: v("commune"), codePostal: v("codePostal"), academie: v("academie"), anneeScolaire: v("annee"),
   }), "Informations enregistrées.");
   revalidatePath("/", "layout");
   return r;

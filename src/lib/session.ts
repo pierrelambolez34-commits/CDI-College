@@ -33,7 +33,8 @@ export type Utilisateur = {
 
 export async function verifierIdentifiants(email: string, motDePasse: string): Promise<Utilisateur | null> {
   const [u] = await db.select().from(schema.users).where(eq(schema.users.email, email.trim().toLowerCase()));
-  if (!u) {
+  if (!u || !u.passwordHash) {
+    // Compte inconnu, ou invitation pas encore acceptée
     await bcrypt.compare(motDePasse, FAUSSE_EMPREINTE);
     return null;
   }

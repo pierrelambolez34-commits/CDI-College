@@ -15,8 +15,11 @@ export const roleEnum = pgEnum("role", ["superadmin", "admin", "utilisateur"]);
 export const colleges = pgTable("colleges", {
   id: uuid("id").primaryKey().defaultRandom(),
   nom: text("nom").notNull(),
-  uai: text("uai").notNull().unique(),
+  /** Code UAI (facultatif à la création). */
+  uai: text("uai").unique(),
   commune: text("commune").notNull().default(""),
+  codePostal: text("code_postal").notNull().default(""),
+  academie: text("academie").notNull().default(""),
   anneeScolaire: text("annee_scolaire").notNull(),
   /** Types de plage proposés (« Cours », « Récréation »…), dans l'ordre d'affichage. */
   typesPlage: text("types_plage").array().notNull(),
@@ -29,7 +32,8 @@ export const users = pgTable("users", {
   collegeId: uuid("college_id").references(() => colleges.id, { onDelete: "cascade" }),
   email: text("email").notNull().unique(),
   nom: text("nom").notNull(),
-  passwordHash: text("password_hash").notNull(),
+  /** Vide tant que la personne n'a pas choisi son mot de passe (invitation en attente). */
+  passwordHash: text("password_hash"),
   role: roleEnum("role").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -99,3 +103,31 @@ export const passages = pgTable("passages", {
   index("passages_college_jour_idx").on(t.collegeId, t.jour),
   index("passages_eleve_idx").on(t.eleveId),
 ]);
+
+export const statutDemandeEnum = pgEnum("statut_demande", ["en_attente", "acceptee", "refusee"]);
+
+/** Demande de création d'un collège, envoyée depuis l'écran de connexion. */
+export const demandesCollege = pgTable("demandes_college", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  nom: text("nom").notNull(),
+  ville: text("ville").notNull(),
+  codePostal: text("code_postal").notNull(),
+  academie: text("academie").notNull(),
+  uai: text("uai"),
+  emailDocumentaliste: text("email_documentaliste").notNull(),
+  statut: statutDemandeEnum("statut").notNull().default("en_attente"),
+  collegeId: uuid("college_id").references(() => colleges.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  traiteeLe: timestamp("traitee_le", { withTimezone: true }),
+}, (t) => [index("demandes_statut_idx").on(t.statut)]);
+
+/**
+ * Liens à usage unique envoyés par e-mail (choix du mot de passe).
+ * Seule l'empreinte SHA-256 du jeton est enregistrée.
+ */
+export const jetons = pgTable("jetons", {
+  id: text("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  utiliseLe: timestamp("utilise_le", { withTimezone: true }),
+});
