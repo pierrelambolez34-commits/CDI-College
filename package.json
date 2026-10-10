@@ -1,0 +1,40 @@
+{
+  "name": "passages-cdi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Suivi des passages des élèves au CDI — application multi-collèges",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:superadmin": "tsx scripts/creer-superadmin.ts",
+    "db:demo": "tsx scripts/demo.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.2.8",
+    "@fontsource/atkinson-hyperlegible": "^5.2.6",
+    "@fontsource/ibm-plex-mono": "^5.2.6",
+    "bcryptjs": "3.0.2",
+    "drizzle-orm": "0.44.7",
+    "next": "16.3.6",
+    "postgres": "3.4.7",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "server-only": "^0.0.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.6",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "dotenv": "16.6.1",
+    "drizzle-kit": "0.31.4",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "3.2.4"
+  }
+}

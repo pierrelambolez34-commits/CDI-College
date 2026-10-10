@@ -1,0 +1,8 @@
+node_modules
+.next
+.env
+*.tsbuildinfo
+next-env.d.ts
+# Ne jamais versionner de vrais fichiers d'élèves
+*.csv
+!tests/fixtures/*.csv

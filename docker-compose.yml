@@ -1,0 +1,18 @@
+# Base PostgreSQL pour travailler sur ton ordinateur.
+# Lancer : docker compose up -d     Arrêter : docker compose down
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cdi
+      POSTGRES_PASSWORD: cdi
+      POSTGRES_DB: cdi
+    ports:
+      - "5432:5432"
+    volumes:
+      - donnees:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+
+volumes:
+  donnees:
