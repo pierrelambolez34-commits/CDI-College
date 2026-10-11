@@ -13,15 +13,17 @@ import EditeurMotifs from "@/app/(app)/parametrage/motifs/EditeurMotifs";
 import ImportEleves from "@/app/(app)/parametrage/eleves/ImportEleves";
 import { ETAPES_ACCUEIL, lireCollege, lireMotifs, lirePlages } from "@/lib/data/college";
 import { utilisateurCollege } from "@/lib/session";
+import Icone from "@/components/Icone";
+import EnTete, { TeteCarte } from "@/components/EnTete";
 
 export const metadata = { title: "Bienvenue" };
 export const dynamic = "force-dynamic";
 
 const ETAPES = [
-  { nom: "Établissement", sous: "Vos informations" },
-  { nom: "Horaires du CDI", sous: "Plages et types" },
-  { nom: "Motifs de venue", sous: "Vos 8 raccourcis" },
-  { nom: "Élèves", sous: "Import du fichier" },
+  { nom: "Établissement", sous: "Vos informations", icone: "ecole", c: "var(--accent)" },
+  { nom: "Horaires du CDI", sous: "Plages et types", icone: "calendrier", c: "var(--mint)" },
+  { nom: "Motifs de venue", sous: "Vos 8 raccourcis", icone: "clavier", c: "var(--sun)" },
+  { nom: "Élèves", sous: "Import du fichier", icone: "import", c: "var(--pep)" },
 ];
 
 const INTRO = [
@@ -57,21 +59,18 @@ export default async function EtapeAccueil({ params }: { params: Promise<{ etape
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <p className="muted small" style={{ margin: 0, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em" }}>Mise en route · étape {n} sur {ETAPES_ACCUEIL}</p>
-          <h1 style={{ marginTop: 4 }}>Bienvenue sur Passages CDI</h1>
-        </div>
-        {termine && <Link href="/saisie" className="btn">Aller à la saisie</Link>}
-      </div>
+      <EnTete sur={`Mise en route · étape ${n} sur ${ETAPES_ACCUEIL}`} icone="etincelles" titre="Bienvenue sur Passages CDI"
+        intro="Quatre étapes rapides et votre CDI est prêt pour la première saisie.">
+        {termine && <Link href="/saisie" className="btn">Aller à la saisie <Icone nom="fleche" taille={16} /></Link>}
+      </EnTete>
       <div className="accueil-barre" aria-hidden="true"><i style={{ width: `${((n - 1) / ETAPES_ACCUEIL) * 100}%` }} /></div>
       <ol className="accueil-etapes" aria-label="Étapes de la mise en route">
         {ETAPES.map((e, i) => {
           const k = i + 1;
           const etat = k === n ? "encours" : k < atteinte || termine ? "fait" : "";
-          const interieur = <><span className="n">{etat === "fait" ? "✓" : k}</span><span><b>{e.nom}</b><small>{e.sous}</small></span></>;
+          const interieur = <><span className="n">{etat === "fait" ? <Icone nom="check" taille={15} /> : k}</span><span><b>{e.nom}</b><small>{e.sous}</small></span></>;
           return (
-            <li key={e.nom}>
+            <li key={e.nom} style={{ "--c": e.c } as React.CSSProperties}>
               {k <= atteinte || termine
                 ? <Link href={`/bienvenue/${k}`} className={etat} aria-current={k === n ? "step" : undefined}>{interieur}</Link>
                 : <span aria-disabled="true">{interieur}</span>}
@@ -80,7 +79,8 @@ export default async function EtapeAccueil({ params }: { params: Promise<{ etape
         })}
       </ol>
       <section className="panel">
-        <div className="head"><h2>{INTRO[n - 1].titre}</h2><p>{INTRO[n - 1].texte}</p></div>
+        <TeteCarte icone={ETAPES[n - 1].icone} couleur={ETAPES[n - 1].c} titre={INTRO[n - 1].titre} />
+        <p className="muted" style={{ margin: "0 0 18px", maxWidth: "68ch" }}>{INTRO[n - 1].texte}</p>
         {contenu}
         {n > 1 && <p style={{ margin: "14px 0 0" }}><Link href={`/bienvenue/${n - 1}`} className="small">← Étape précédente</Link></p>}
       </section>

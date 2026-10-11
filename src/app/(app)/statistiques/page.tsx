@@ -3,6 +3,8 @@ import { calculerStats, lireFiltres, type Filtres } from "@/lib/data/stats";
 import { utilisateurCollege } from "@/lib/session";
 import { JOURS, formatMinute } from "@/lib/texte";
 import Infobulles from "./Infobulles";
+import Icone from "@/components/Icone";
+import EnTete, { TeteCarte } from "@/components/EnTete";
 
 export const metadata = { title: "Statistiques" };
 export const dynamic = "force-dynamic";
@@ -49,13 +51,10 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
 
   return (
     <main className="wrap">
-      <div className="page-head">
-        <h1>Statistiques</h1>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <span className="muted small">{s.college.nom} · depuis le {new Date(`${s.depuis}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span>
-          <a className="btn" href={exportHref}>Exporter en CSV</a>
-        </div>
-      </div>
+      <EnTete sur={s.college.nom} icone="graphique" titre="Statistiques du CDI"
+        intro={`Depuis le ${new Date(`${s.depuis}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}. Survolez les graphiques pour voir le détail.`}>
+        <a className="btn" href={exportHref}><Icone nom="import" taille={18} /> Exporter en CSV</a>
+      </EnTete>
 
       <div className="filters">
         {filtre("Période", "periode", [["annee", "Année scolaire"], ["30", "30 derniers jours"], ["7", "Cette semaine"]])}
@@ -75,7 +74,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
 
         <div className="cards">
           <section className="card">
-            <header><h2>Pourquoi viennent-ils ?</h2><p>Nombre de passages par motif</p></header>
+            <TeteCarte icone="graphique" titre="Pourquoi viennent-ils ?" sous="Nombre de passages par motif" />
             <div className="hbars">
               {compte.map(({ m, n }) => (
                 <div key={m.id} className="hb" tabIndex={0} data-tip={`${m.libelle}\n${nb(n)} passages · ${pct(n, s.passages)} %`}>
@@ -88,7 +87,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
           </section>
 
           <section className="card">
-            <header><h2>Motifs selon le moment</h2><p>Répartition des motifs pour chaque type de plage, en %</p></header>
+            <TeteCarte icone="horloge" couleur="var(--pep)" titre="Motifs selon le moment" sous="Répartition des motifs pour chaque type de plage, en %" />
             <div className="legend">{motifsAffiches.filter((m) => m.actif).map((m) => <span key={m.id} style={style({ "--c": couleur(m.ordre) })}><i />{m.libelle}</span>)}</div>
             <div className="stacks">
               {[...s.types, ...new Set(s.parTypeMotif.map((r) => r.type_plage).filter((t) => !s.types.includes(t)))].map((t) => {
@@ -111,7 +110,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
           </section>
 
           <section className="card wide">
-            <header><h2>Quand le CDI est-il le plus fréquenté ?</h2><p>Nombre moyen d&apos;élèves par séance, selon le jour et la plage horaire</p></header>
+            <TeteCarte icone="calendrier" couleur="var(--mint)" titre="Quand le CDI est-il le plus fréquenté ?" sous="Nombre moyen d'élèves par séance, selon le jour et la plage horaire" />
             <div className="hm-wrap"><div className="hm">
               <div />
               {JOURS.map((j) => <div key={j} className="ch">{j.slice(0, 3)}.</div>)}
@@ -123,7 +122,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
           </section>
 
           <section className="card">
-            <header><h2>Évolution par semaine</h2><p>Nombre de passages par semaine</p></header>
+            <TeteCarte icone="graphique" couleur="var(--sun)" titre="Évolution par semaine" sous="Nombre de passages par semaine" />
             <div className="colchart">
               <div className="yax">{[0, plafond / 2, plafond].map((t) => <span key={t} style={{ bottom: `${(t / plafond) * 100}%` }}>{nb(t)}</span>)}</div>
               <div className="plot">
@@ -139,7 +138,7 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
           </section>
 
           <section className="card">
-            <header><h2>Quels élèves touche-t-on ?</h2><p>Part des élèves venus au moins une fois, par niveau</p></header>
+            <TeteCarte icone="ecole" titre="Quels élèves touche-t-on ?" sous="Part des élèves venus au moins une fois, par niveau" />
             <div className="niv">
               {s.niveaux.map((n) => (
                 <div key={n.niveau} className="nv" tabIndex={0} data-tip={`${n.niveau}\n${n.venus} élèves venus sur ${n.population}`}>

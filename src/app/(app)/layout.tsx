@@ -10,9 +10,9 @@ export default async function LayoutCollege({ children }: { children: React.Reac
   // Tant que l'administrateur n'a pas fini la mise en route, on l'y ramène.
   if (u.role === "admin" && college.etapeAccueil <= ETAPES_ACCUEIL) redirect("/bienvenue");
   return (
-    <>
+    <div className="fond-app">
       <Navigation nomCollege={college.nom} nomUtilisateur={u.nom} admin={u.role === "admin"} />
       {children}
-    </>
+    </div>
   );
 }

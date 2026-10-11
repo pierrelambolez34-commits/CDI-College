@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { normaliser, formatMinute } from "@/lib/texte";
 import { instantParis, plageEnCours, type PlageSimple } from "@/lib/temps";
 import { actionAnnuler, actionEnregistrer } from "./actions";
+import EnTete, { TeteCarte } from "@/components/EnTete";
 
 type Eleve = { id: string; nom: string; prenom: string; division: string };
 type Motif = { id: string; libelle: string; ordre: number };
@@ -208,10 +209,9 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
 
   return (
     <main className="wrap">
-      <div className="page-head">
-        <h1>Saisie</h1>
+      <EnTete sur="Aujourd'hui au CDI" icone="clavier" titre="Saisie des passages" intro="Quelques lettres du nom, Entrée, puis le chiffre du motif.">
         <div className="clock"><span className="muted" style={{ textTransform: "capitalize" }}>{nomJour}</span><span className="t">{formatMinute(instant.minute)}</span></div>
-      </div>
+      </EnTete>
 
       {plagesDuJour.length > 0 && (
         <div className="strip" aria-label="Plages horaires du jour">
@@ -290,11 +290,11 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
 
         <aside className="side">
           <section className="panel">
-            <h2>{plage ? "Au CDI sur cette plage" : "Dernière heure"} <span className="count">{presents.length}</span></h2>
+            <TeteCarte icone="equipe" titre={plage ? "Au CDI sur cette plage" : "Dernière heure"} sous={plage ? `${formatMinute(plage.debut)}–${formatMinute(plage.fin)}` : undefined}><span className="count">{presents.length}</span></TeteCarte>
             <ul className="list">{presents.length ? presents.map(ligne) : <li className="empty">Personne pour l&apos;instant.</li>}</ul>
           </section>
           <section className="panel">
-            <h2>Motifs aujourd&apos;hui <span className="muted small">{passages.length} passage{passages.length > 1 ? "s" : ""}</span></h2>
+            <TeteCarte icone="graphique" couleur="var(--sun)" titre="Motifs aujourd'hui" sous={`${passages.length} passage${passages.length > 1 ? "s" : ""}`} />
             <div className="hbars" style={{ marginTop: 10 }}>
               {compteParMotif.length ? compteParMotif.map(({ m, n }) => (
                 <div className="hb" key={m.id} style={{ gridTemplateColumns: "minmax(0,1fr) 34px" }}>
@@ -308,7 +308,7 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
             </div>
           </section>
           <section className="panel">
-            <h2>Journal du jour</h2>
+            <TeteCarte icone="horloge" couleur="var(--mint)" titre="Journal du jour" sous="Les 15 derniers passages" />
             <ul className="list">{passages.length ? passages.slice(0, 15).map(ligne) : <li className="empty">Aucun passage aujourd&apos;hui.</li>}</ul>
           </section>
         </aside>

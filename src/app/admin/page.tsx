@@ -1,12 +1,11 @@
-import Logo from "@/components/Logo";
 import Link from "next/link";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { seDeconnecter } from "@/app/connexion/actions";
 import { invitationsEnAttente } from "@/lib/data/demandes";
 import { smtpConfigure } from "@/lib/email";
 import { superAdmin } from "@/lib/session";
 import { BoutonRenvoyer } from "./Boutons";
+import EnTete, { TeteCarte } from "@/components/EnTete";
 
 export const metadata = { title: "Collèges" };
 export const dynamic = "force-dynamic";
@@ -15,7 +14,7 @@ const dateFr = (d: string) => new Date(d).toLocaleDateString("fr-FR", { day: "nu
 
 /** Espace super-administrateur : suivi des collèges inscrits. */
 export default async function Admin() {
-  const u = await superAdmin();
+  await superAdmin();
   const [invitations, colleges] = await Promise.all([
     invitationsEnAttente(),
     db.execute<{ id: string; nom: string; uai: string | null; commune: string; code_postal: string; academie: string; etape_accueil: number; created_at: string; eleves: number; passages: number; admin: string | null }>(sql`
@@ -30,25 +29,16 @@ export default async function Admin() {
 
   return (
     <>
-      <nav className="nav"><div className="nav-in">
-        <Logo />
-        <div className="nav-links"><Link aria-current="page" href="/admin">Collèges</Link><Link href="/admin/emails">E-mails de test</Link></div>
-        <div className="nav-user"><span>{u.nom}</span><form action={seDeconnecter}><button className="btn ghost sm">Se déconnecter</button></form></div>
-      </div></nav>
       <main className="wrap">
+        <EnTete sur="Super-administrateur" icone="ecole" titre="Collèges inscrits"
+          intro={`${colleges.length} inscrit${colleges.length > 1 ? "s" : ""} · ${nbActifs} en service. Les collèges s'inscrivent seuls depuis la page d'accueil.`} />
         {!smtpConfigure() && (
           <div className="alert warn" style={{ marginTop: 0 }}>
             Mode test : les e-mails d&apos;activation ne sont pas réellement envoyés. <Link href="/admin/emails">Voir les e-mails de test</Link>.
           </div>
         )}
-        <div className="page-head">
-          <h1>Collèges</h1>
-          <span className="muted">{colleges.length} inscrit{colleges.length > 1 ? "s" : ""} · {nbActifs} en service</span>
-        </div>
         <section className="panel">
-          <div className="head" style={{ marginBottom: 12 }}>
-            <p>Les collèges s&apos;inscrivent seuls depuis la page d&apos;accueil : le compte du professeur documentaliste est créé et un lien d&apos;activation lui est envoyé.</p>
-          </div>
+          <TeteCarte icone="ecole" titre="Tous les collèges" sous="Activation, mise en route et utilisation de chaque établissement" />
           {colleges.length ? (
             <div className="tbl"><table>
               <thead><tr><th>Collège</th><th>Ville</th><th>Académie</th><th>Administrateur</th><th>État</th><th>Élèves</th><th>Passages</th><th>Inscrit le</th></tr></thead>
