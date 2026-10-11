@@ -3,10 +3,11 @@
  * 463 élèves inventés et six semaines de passages, pour essayer la saisie et les statistiques.
  *
  * Connexion : demo@exemple.fr / demonstration
- * Relancer le script efface et recrée ce collège.
+ * Relancer le script efface et recrée ce collège, ainsi que tout collège ou compte
+ * qui utiliserait déjà les adresses de démonstration (demo@ et assistant@exemple.fr).
  */
 import "dotenv/config";
-import { eq } from "drizzle-orm";
+import { eq, inArray, or } from "drizzle-orm";
 import { db, schema, sql } from "../src/db";
 import { creerCollege, lireMotifs, lirePlages } from "../src/lib/data/college";
 import { importerEleves } from "../src/lib/data/eleves";
@@ -41,11 +42,16 @@ function tirerMotif(type: string) {
 }
 
 async function main() {
-  const [ancien] = await db.select().from(schema.colleges).where(eq(schema.colleges.uai, UAI));
-  if (ancien) {
-    await db.delete(schema.passages).where(eq(schema.passages.collegeId, ancien.id));
-    await db.delete(schema.colleges).where(eq(schema.colleges.id, ancien.id));
+  // Nettoyage : le collège de démonstration précédent, et tout collège créé avec une adresse de démonstration
+  const EMAILS_DEMO = ["demo@exemple.fr", "assistant@exemple.fr"];
+  const comptes = await db.select({ collegeId: schema.users.collegeId }).from(schema.users).where(inArray(schema.users.email, EMAILS_DEMO));
+  const parUai = await db.select({ id: schema.colleges.id }).from(schema.colleges).where(eq(schema.colleges.uai, UAI));
+  const aSupprimer = [...new Set([...parUai.map((c) => c.id), ...comptes.map((c) => c.collegeId).filter((id): id is string => !!id)])];
+  if (aSupprimer.length) {
+    await db.delete(schema.passages).where(inArray(schema.passages.collegeId, aSupprimer));
+    await db.delete(schema.colleges).where(or(...aSupprimer.map((id) => eq(schema.colleges.id, id))));
   }
+  await db.delete(schema.users).where(inArray(schema.users.email, EMAILS_DEMO));
   const college = await creerCollege({
     nom: "Collège de démonstration", uai: UAI, commune: "Pérols", anneeScolaire: "2026-2027",
     admin: { email: "demo@exemple.fr", nom: "Claire Documentaliste", motDePasse: "demonstration" },
