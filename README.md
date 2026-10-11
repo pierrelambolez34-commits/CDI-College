@@ -49,6 +49,14 @@ Ouvre ensuite http://localhost:3000.
 - Super-administrateur : l'adresse et le mot de passe indiqués dans ton fichier `.env`. **Change le mot de passe** avant toute mise en ligne.
 - En développement, aucun e-mail n'est réellement envoyé : ils s'affichent dans le terminal où tourne `npm run dev`, avec leurs liens cliquables.
 
+
+### Lancer l'application avec les mises à jour automatiques (Windows)
+
+Double-clique sur **`demarrer.cmd`** à la racine du projet (ou tape `.\demarrer.cmd` dans PowerShell).
+Le script démarre la base de données, récupère la dernière version sur GitHub, lance l'application sur http://localhost:3000,
+puis vérifie GitHub toutes les 15 secondes : à chaque nouvelle version, il l'installe et relance l'application tout seul.
+Il suffit ensuite de recharger la page (F5). Pour arrêter : `Ctrl + C`.
+
 ## 2. Les commandes utiles
 
 | Commande | Effet |
