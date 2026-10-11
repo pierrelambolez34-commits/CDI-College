@@ -8,16 +8,15 @@ Elle est **multi-collèges** : chaque collège a ses propres élèves, horaires,
 | **Saisie** | tous les comptes du collège | Déclarer l'entrée d'un élève en 3 touches : quelques lettres, Entrée, chiffre du motif |
 | **Statistiques** | tous les comptes du collège | Motifs, moments de fréquentation, évolution, élèves touchés, export CSV |
 | **Paramétrage** | administrateurs du collège | Établissement, horaires du CDI, motifs, import des élèves, comptes |
-| **Collèges** (`/admin`) | super-administrateur (toi) | Confirmer ou refuser les demandes de création de collège, suivre les collèges ouverts |
+| **Collèges** (`/admin`) | super-administrateur (toi) | Suivre les collèges inscrits (activation, mise en route, utilisation) |
 
 ## Comment un nouveau collège arrive
 
-1. Sur l'écran de connexion, le professeur documentaliste clique sur **Création d'un collège** et remplit le formulaire : nom, ville, code postal, académie, code UAI (facultatif) et son e-mail.
-2. Tu reçois un e-mail avec un lien vers l'application. Dans **Collèges**, la demande apparaît dans « Demandes à traiter ».
-3. Tu cliques sur **Confirmer la création** : le collège est créé avec des horaires et des motifs par défaut, et le documentaliste reçoit un e-mail d'invitation.
-4. Il clique sur le lien (valable 7 jours, une seule fois), choisit et confirme son mot de passe, puis arrive directement dans le paramétrage.
+1. Sur la page d'accueil, le professeur documentaliste clique sur **Ouvrir mon CDI gratuitement** et remplit le formulaire : nom du collège, ville, code postal, académie, code UAI (facultatif) et son e-mail, puis **Envoyer la demande**.
+2. Le collège et son compte administrateur sont créés tout de suite, sans validation. Il reçoit un e-mail d'activation (lien valable 7 jours, une seule fois) et choisit son mot de passe.
+3. Il est conduit dans la **mise en route en 4 étapes** : établissement (repris de l'inscription), horaires du CDI, motifs de venue, import des élèves. À chaque connexion, tant que ce n'est pas terminé, il reprend à l'étape où il s'était arrêté.
 
-Si le lien a expiré, le bouton **Renvoyer l'invitation** dans la liste des collèges en envoie un nouveau.
+Si le lien a expiré, il suffit de refaire l'inscription avec la même adresse : un nouveau lien est envoyé. Le super-administrateur peut aussi cliquer sur **Renvoyer le lien** dans la liste des collèges.
 
 ---
 
@@ -63,7 +62,7 @@ Il suffit ensuite de recharger la page (F5). Pour arrêter : `Ctrl + C`.
 | Commande | Effet |
 |---|---|
 | `npm run dev` | Lance l'application en mode développement (elle se recharge à chaque modification) |
-| `npm test` | Lance les tests automatiques (21 tests : cloisonnement entre collèges, parcours de création d'un collège…) |
+| `npm test` | Lance les tests automatiques (20 tests : cloisonnement entre collèges, inscription et mise en route d'un collège…) |
 | `npm run typecheck` | Vérifie le code TypeScript sans le lancer |
 | `npm run build` puis `npm start` | Version de production |
 | `npm run db:generate` | Après une modification de `src/db/schema.ts` : crée le fichier de migration |
@@ -81,7 +80,7 @@ src/
     data/eleves.ts        Import annuel des élèves
     data/passages.ts      Enregistrement et annulation des passages
     data/stats.ts         Calcul des statistiques et export CSV
-    data/demandes.ts      Demandes de création de collège, invitations, choix du mot de passe
+    data/demandes.ts      Inscription d'un collège, e-mail d'activation, choix du mot de passe
     email.ts              Envoi des e-mails (SMTP), modèle de mise en page
     limite.ts             Limite du nombre de tentatives (connexion, demandes)
     csv.ts                Lecture du fichier Pronote/SIECLE (s'exécute dans le navigateur)
@@ -90,9 +89,10 @@ src/
     validation.ts         Contrôle des données reçues par le serveur
   app/
     connexion/            Page de connexion
-    creer-un-college/     Formulaire public de demande de création
+    creer-un-college/     Formulaire public d'inscription d'un collège
+    bienvenue/[etape]/    Mise en route en 4 étapes après l'activation
     activation/[jeton]/   Choix du mot de passe depuis le lien d'invitation
-    admin/                Espace super-administrateur (demandes et collèges)
+    admin/                Espace super-administrateur (collèges, e-mails de test)
     (app)/saisie/         Écran de saisie (Saisie.tsx contient toute la logique clavier)
     (app)/statistiques/   Tableau de bord et export CSV
     (app)/parametrage/    Les 5 rubriques du paramétrage

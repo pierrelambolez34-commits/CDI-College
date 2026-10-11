@@ -15,6 +15,13 @@
       "when": 1791638540405,
       "tag": "0001_demandes_college",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791737576402,
+      "tag": "0002_parcours_accueil",
+      "breakpoints": true
     }
   ]
 }

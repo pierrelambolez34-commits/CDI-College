@@ -8,5 +8,5 @@ export async function choisirMotDePasse(jeton: string, _: unknown, f: FormData) 
   const r = await executer(() => activerCompte(jeton, String(f.get("motDePasse") ?? ""), String(f.get("confirmation") ?? "")));
   if (!r.ok) return r;
   await ouvrirSession(r.donnees!);
-  redirect("/parametrage/etablissement?bienvenue=1");
+  redirect("/bienvenue");
 }

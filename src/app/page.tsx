@@ -46,7 +46,7 @@ const MOTIFS_BILAN = [
 
 const FAQ: { q: string; r: React.ReactNode }[] = [
   { q: "Quelles données faut-il sur les élèves ?", r: "Le nom, le prénom et la classe, rien d'autre. Si votre export Pronote ou SIECLE contient d'autres colonnes, comme les coordonnées des responsables légaux, elles sont ignorées et ne sont jamais envoyées." },
-  { q: "Combien de temps faut-il pour démarrer ?", r: "Environ 15 minutes. Vous faites la demande d'ouverture, vous recevez un lien pour choisir votre mot de passe, puis vous vérifiez les horaires et les motifs proposés par défaut et importez votre fichier d'élèves." },
+  { q: "Combien de temps faut-il pour démarrer ?", r: "Environ 15 minutes. Vous créez l'espace de votre collège, vous activez votre compte grâce au lien reçu par e-mail, puis 4 étapes guidées : votre établissement, les horaires du CDI, les motifs de venue et l'import du fichier d'élèves." },
   { q: "Peut-on l'utiliser sur tablette ?", r: "Oui. Sur ordinateur, tout se fait au clavier pour aller vite ; sur tablette, on sélectionne l'élève et on touche la tuile du motif." },
   { q: "Mes collègues peuvent-ils saisir les passages ?", r: "Oui. L'administrateur du CDI crée un compte pour chaque assistant d'éducation ou collègue. Ils saisissent les passages et consultent les statistiques ; seul l'administrateur modifie le paramétrage." },
   { q: "Les autres collèges voient-ils mes données ?", r: "Non. Chaque établissement dispose d'un espace séparé : il ne voit que ses propres élèves, passages et statistiques." },

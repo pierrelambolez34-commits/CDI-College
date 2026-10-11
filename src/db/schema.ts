@@ -23,6 +23,8 @@ export const colleges = pgTable("colleges", {
   anneeScolaire: text("annee_scolaire").notNull(),
   /** Types de plage proposés (« Cours », « Récréation »…), dans l'ordre d'affichage. */
   typesPlage: text("types_plage").array().notNull(),
+  /** Parcours d'accueil : étape en cours (1 à 4), 5 = terminé. */
+  etapeAccueil: smallint("etape_accueil").notNull().default(1),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

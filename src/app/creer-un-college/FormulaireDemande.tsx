@@ -9,12 +9,18 @@ export default function FormulaireDemande() {
 
   if (etat?.ok) return (
     <>
-      <div><h1>Demande envoyée</h1><p className="intro">Merci. Votre demande a bien été transmise.</p></div>
+      <div><h1>Vérifiez votre messagerie</h1><p className="intro">L&apos;espace de votre collège est créé.</p></div>
       <div className="encart">
-        <p><b>Et maintenant ?</b></p>
-        <p>Dès que l&apos;espace de votre collège sera ouvert, vous recevrez un e-mail{etat.message ? <> à <b>{etat.message}</b></> : null} avec un lien pour choisir votre mot de passe.</p>
-        <p className="muted small">Pensez à vérifier vos courriers indésirables.</p>
+        <p>Un e-mail d&apos;activation vient d&apos;être envoyé{etat.email ? <> à <b>{etat.email}</b></> : null}. Cliquez sur le lien qu&apos;il contient pour choisir votre mot de passe.</p>
+        <p>Vous serez ensuite guidé en 4 étapes : votre établissement, les horaires du CDI, les motifs de venue et l&apos;import des élèves.</p>
+        <p className="muted small">Rien reçu après quelques minutes ? Vérifiez vos courriers indésirables, ou refaites l&apos;inscription avec la même adresse pour recevoir un nouveau lien.</p>
       </div>
+      {etat.lienTest && (
+        <div className="alert warn" style={{ marginTop: 0 }}>
+          Mode test : aucun e-mail n&apos;est réellement envoyé sur cet ordinateur.{" "}
+          <a href={etat.lienTest}>Ouvrir le lien d&apos;activation</a>
+        </div>
+      )}
       <Link href="/connexion" className="retour">← Retour à la connexion</Link>
     </>
   );
@@ -24,7 +30,7 @@ export default function FormulaireDemande() {
       <div>
         <Link href="/connexion" className="retour">← Retour à la connexion</Link>
         <h1 style={{ marginTop: 10 }}>Création d&apos;un collège</h1>
-        <p className="intro">Demandez l&apos;ouverture de l&apos;espace CDI de votre collège. Le compte administrateur sera celui du professeur documentaliste.</p>
+        <p className="intro">Créez l&apos;espace CDI de votre collège. Vous en serez l&apos;administrateur : un e-mail vous permettra d&apos;activer votre compte.</p>
       </div>
       <form action={action}>
         <div className="form">
@@ -38,14 +44,14 @@ export default function FormulaireDemande() {
             </select>
           </label>
           <label>Code UAI <span>Facultatif, ex. 0341234A</span><input className="inp" id="uai" name="uai" maxLength={8} /></label>
-          <label style={{ gridColumn: "1 / -1" }}>E-mail du professeur documentaliste <span>Il recevra le lien pour choisir son mot de passe</span>
+          <label style={{ gridColumn: "1 / -1" }}>E-mail du professeur documentaliste <span>Vous recevrez le lien d&apos;activation à cette adresse</span>
             <input className="inp" id="email" name="email" type="email" required autoComplete="email" />
           </label>
           <label className="cache" aria-hidden="true">Site web<input id="site" name="site" tabIndex={-1} autoComplete="off" /></label>
         </div>
         {etat && !etat.ok && <div className="alert bad" role="alert">{etat.erreur}</div>}
         <div className="actions" style={{ borderTop: 0, paddingTop: 0 }}>
-          <button className="btn primary" style={{ width: "100%" }} disabled={enCours}>{enCours ? "Envoi…" : "Envoyer"}</button>
+          <button className="btn primary" style={{ width: "100%" }} disabled={enCours}>{enCours ? "Envoi…" : "Envoyer la demande"}</button>
         </div>
       </form>
     </>

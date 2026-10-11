@@ -5,9 +5,10 @@
  */
 import { useRef, useState, useTransition } from "react";
 import { analyser, devinerColonnes, lireFichier, type Correspondance, type FichierLu } from "@/lib/csv";
-import { actionImport } from "../actions";
+import { actionImport, actionTerminerAccueil } from "../actions";
 
-export default function ImportEleves({ dejaDesEleves }: { dejaDesEleves: boolean }) {
+/** `accueil` : utilisé dans la dernière étape du parcours d'accueil (boutons « Terminer » et « Importer plus tard »). */
+export default function ImportEleves({ dejaDesEleves, accueil = false }: { dejaDesEleves: boolean; accueil?: boolean }) {
   const [fichier, setFichier] = useState<(FichierLu & { nomFichier: string }) | null>(null);
   const [col, setCol] = useState<Correspondance>({ nom: -1, prenom: -1, division: -1 });
   const [archiver, setArchiver] = useState(true);
@@ -34,7 +35,9 @@ export default function ImportEleves({ dejaDesEleves }: { dejaDesEleves: boolean
         <div><b>{bilan.misAJour}</b><span>mis à jour (classe ou orthographe)</span></div>
         <div><b>{bilan.archives}</b><span>archivés (absents du fichier)</span></div>
       </div></div>
-      <div className="actions"><button className="btn" onClick={() => { setBilan(null); setFichier(null); }}>Importer un autre fichier</button><a className="btn primary" href="/saisie">Ouvrir la saisie</a></div>
+      <div className="actions"><button className="btn" onClick={() => { setBilan(null); setFichier(null); }}>Importer un autre fichier</button>{accueil
+        ? <form action={actionTerminerAccueil}><button className="btn primary">Terminer et ouvrir la saisie</button></form>
+        : <a className="btn primary" href="/saisie">Ouvrir la saisie</a>}</div>
     </>
   );
 
@@ -49,6 +52,11 @@ export default function ImportEleves({ dejaDesEleves }: { dejaDesEleves: boolean
         <input ref={input} type="file" accept=".csv,text/csv" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) charger(f); e.target.value = ""; }} />
       </div>
       {erreur && <div className="alert bad">{erreur}</div>}
+      {accueil && (
+        <div className="actions">
+          <form action={actionTerminerAccueil}><button className="btn ghost">Importer plus tard</button></form>
+        </div>
+      )}
     </>
   );
 

@@ -63,6 +63,7 @@ async function main() {
     }
   }
   await importerEleves(college.id, lignes, true);
+  await db.update(schema.colleges).set({ etapeAccueil: 5 }).where(eq(schema.colleges.id, college.id));
   const eleves = await db.select().from(schema.eleves).where(eq(schema.eleves.collegeId, college.id));
   const motifs = await lireMotifs(college.id);
   const plages = await lirePlages(college.id);

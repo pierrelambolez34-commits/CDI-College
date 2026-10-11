@@ -7,7 +7,7 @@ import { actionHoraires } from "../actions";
 const couleurType = (types: string[], t: string) => `var(--t${Math.min(types.indexOf(t) + 1, 6) || 6})`;
 const versChamp = (m: number) => { const h = Math.floor(m / 60), mn = m % 60; return `${String(h).padStart(2, "0")}:${String(mn).padStart(2, "0")}`; };
 
-export default function EditeurHoraires({ typesInitiaux, plagesInitiales }: { typesInitiaux: string[]; plagesInitiales: PlageSaisie[] }) {
+export default function EditeurHoraires({ typesInitiaux, plagesInitiales, etapeSuivante, libelle = "Enregistrer les horaires" }: { typesInitiaux: string[]; plagesInitiales: PlageSaisie[]; etapeSuivante?: number; libelle?: string }) {
   const [types, setTypes] = useState(typesInitiaux);
   const [plages, setPlages] = useState(plagesInitiales);
   const [jour, setJour] = useState(1);
@@ -48,7 +48,7 @@ export default function EditeurHoraires({ typesInitiaux, plagesInitiales }: { ty
   }
   function enregistrer() {
     demarrer(async () => {
-      const r = await actionHoraires(types, plages);
+      const r = await actionHoraires(types, plages, etapeSuivante);
       setMessage(r.ok ? { ok: true, texte: r.message ?? "Enregistré." } : { ok: false, texte: r.erreur });
       if (r.ok) setModifie(false);
     });
@@ -128,7 +128,7 @@ export default function EditeurHoraires({ typesInitiaux, plagesInitiales }: { ty
       {message && <div className={`alert ${message.ok ? "ok" : "bad"}`}>{message.texte}</div>}
       <div className="actions">
         {modifie && <span className="muted small" style={{ alignSelf: "center" }}>Modifications non enregistrées</span>}
-        <button className="btn primary" onClick={enregistrer} disabled={enCours || conflits.size > 0}>{enCours ? "Enregistrement…" : "Enregistrer les horaires"}</button>
+        <button className="btn primary" onClick={enregistrer} disabled={enCours || conflits.size > 0}>{enCours ? "Enregistrement…" : libelle}</button>
       </div>
     </>
   );

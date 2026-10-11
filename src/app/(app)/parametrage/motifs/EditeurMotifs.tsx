@@ -5,7 +5,7 @@ import { actionMotifs } from "../actions";
 
 type M = { id?: string; libelle: string; cle: string };
 
-export default function EditeurMotifs({ initiaux }: { initiaux: { id: string; libelle: string }[] }) {
+export default function EditeurMotifs({ initiaux, etapeSuivante, libelle = "Enregistrer les motifs" }: { initiaux: { id: string; libelle: string }[]; etapeSuivante?: number; libelle?: string }) {
   const [liste, setListe] = useState<M[]>(initiaux.map((m) => ({ ...m, cle: m.id })));
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
   const [enCours, demarrer] = useTransition();
@@ -37,10 +37,10 @@ export default function EditeurMotifs({ initiaux }: { initiaux: { id: string; li
       {message && <div className={`alert ${message.ok ? "ok" : "bad"}`}>{message.texte}</div>}
       <div className="actions">
         <button className="btn primary" disabled={enCours || vide || !liste.length} onClick={() => demarrer(async () => {
-          const r = await actionMotifs(liste.map(({ id, libelle }) => ({ id, libelle })));
+          const r = await actionMotifs(liste.map(({ id, libelle }) => ({ id, libelle })), etapeSuivante);
           setMessage(r.ok ? { ok: true, texte: r.message ?? "Enregistré." } : { ok: false, texte: r.erreur });
           if (r.ok && r.donnees) setListe(r.donnees.map((m) => ({ id: m.id, libelle: m.libelle, cle: m.id })));
-        })}>{enCours ? "Enregistrement…" : "Enregistrer les motifs"}</button>
+        })}>{enCours ? "Enregistrement…" : libelle}</button>
       </div>
     </>
   );

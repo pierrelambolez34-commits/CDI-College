@@ -140,3 +140,11 @@ export async function supprimerCompte(collegeId: string, userId: string, moi: st
   if (userId === moi) throw new ErreurMetier("Vous ne pouvez pas supprimer votre propre compte.");
   await db.delete(schema.users).where(and(eq(schema.users.id, userId), eq(schema.users.collegeId, collegeId)));
 }
+
+/** Parcours d'accueil : nombre d'étapes, et passage à l'étape suivante (sans jamais revenir en arrière). */
+export const ETAPES_ACCUEIL = 4;
+export async function avancerAccueil(collegeId: string, etape: number) {
+  const c = await lireCollege(collegeId);
+  const cible = Math.min(Math.max(etape, 1), ETAPES_ACCUEIL + 1);
+  if (cible > c.etapeAccueil) await db.update(schema.colleges).set({ etapeAccueil: cible }).where(eq(schema.colleges.id, collegeId));
+}

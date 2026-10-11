@@ -20,8 +20,8 @@ export default async function Connexion({ searchParams }: { searchParams: Promis
       <p className="muted small" style={{ margin: 0 }}>Mot de passe oublié ? Demandez à l&apos;administrateur de votre collège.</p>
       <div className="separateur">Nouveau collège</div>
       <div className="encart">
-        <p>Votre collège n&apos;utilise pas encore Passages CDI ? Faites une demande : nous ouvrons l&apos;espace et vous envoyons un lien pour choisir votre mot de passe.</p>
-        <Link href="/creer-un-college" className="btn" style={{ justifyContent: "center" }}>Création d&apos;un collège</Link>
+        <p>Votre collège n&apos;utilise pas encore Passages CDI ? Créez son espace en quelques minutes : vous recevrez un e-mail pour activer votre compte, puis vous serez guidé en 4 étapes.</p>
+        <Link href="/creer-un-college" className="btn" style={{ justifyContent: "center" }}>Ouvrir mon CDI gratuitement</Link>
       </div>
     </CadreAccueil>
   );

@@ -5,10 +5,11 @@ import { actionEtablissement } from "../actions";
 
 type V = { nom: string; uai: string; commune: string; codePostal: string; academie: string; annee: string };
 
-export default function FormEtablissement({ valeurs }: { valeurs: V }) {
+export default function FormEtablissement({ valeurs, etapeSuivante, libelle = "Enregistrer" }: { valeurs: V; etapeSuivante?: number; libelle?: string }) {
   const [etat, action, enCours] = useActionState(actionEtablissement, null);
   return (
     <form action={action}>
+      {etapeSuivante && <input type="hidden" name="etapeSuivante" value={etapeSuivante} />}
       <div className="form">
         <label>Nom du collège<input className="inp" id="nom" name="nom" defaultValue={valeurs.nom} required /></label>
         <label>Code UAI <span>Facultatif : 7 chiffres et une lettre</span><input className="inp" id="uai" name="uai" defaultValue={valeurs.uai} maxLength={8} /></label>
@@ -23,7 +24,7 @@ export default function FormEtablissement({ valeurs }: { valeurs: V }) {
         <label>Année scolaire <span>Format 2026-2027</span><input className="inp" id="annee" name="annee" defaultValue={valeurs.annee} required /></label>
       </div>
       {etat && (etat.ok ? <div className="alert ok">{etat.message}</div> : <div className="alert bad">{etat.erreur}</div>)}
-      <div className="actions"><button className="btn primary" disabled={enCours}>Enregistrer</button></div>
+      <div className="actions"><button className="btn primary" disabled={enCours}>{enCours ? "Enregistrement…" : libelle}</button></div>
     </form>
   );
 }

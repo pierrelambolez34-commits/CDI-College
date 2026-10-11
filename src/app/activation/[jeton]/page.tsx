@@ -14,7 +14,7 @@ export default async function Activation({ params }: { params: Promise<{ jeton: 
       {invitation ? <>
         <div>
           <h1>Bienvenue</h1>
-          <p className="intro">L&apos;espace de <b style={{ color: "var(--ink)" }}>{invitation.college}</b> est prêt. Choisissez votre mot de passe pour y accéder.</p>
+          <p className="intro">L&apos;espace de <b style={{ color: "var(--ink)" }}>{invitation.college}</b> est prêt. Choisissez votre mot de passe pour l&apos;activer. Vous serez ensuite guidé en 4 étapes pour le mettre en route.</p>
         </div>
         <FormulaireMotDePasse jeton={jeton} email={invitation.email} />
       </> : <>
@@ -23,7 +23,7 @@ export default async function Activation({ params }: { params: Promise<{ jeton: 
           <p className="intro">Ce lien a déjà été utilisé ou n&apos;est plus valable (il expire au bout de 7 jours).</p>
         </div>
         <div className="encart">
-          <p>Si vous avez déjà choisi votre mot de passe, connectez-vous normalement. Sinon, demandez un nouveau lien en répondant à l&apos;e-mail d&apos;invitation.</p>
+          <p>Si vous avez déjà choisi votre mot de passe, connectez-vous normalement. Sinon, refaites l&apos;inscription avec la même adresse : un nouveau lien vous sera envoyé.</p>
           <Link href="/connexion" className="btn primary" style={{ justifyContent: "center" }}>Aller à la connexion</Link>
         </div>
       </>}
