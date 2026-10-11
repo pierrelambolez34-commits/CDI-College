@@ -47,7 +47,8 @@ Ouvre ensuite http://localhost:3000.
 
 - Collège de démonstration : `demo@exemple.fr` / `demonstration` (administrateur) ou `assistant@exemple.fr` / `demonstration` (saisie seulement).
 - Super-administrateur : l'adresse et le mot de passe indiqués dans ton fichier `.env`. **Change le mot de passe** avant toute mise en ligne.
-- En développement, aucun e-mail n'est réellement envoyé : ils s'affichent dans le terminal où tourne `npm run dev`, avec leurs liens cliquables.
+- En développement, aucun e-mail n'est réellement envoyé : connecté en super-administrateur, ouvre **E-mails de test** (`/admin/emails`) pour les lire et cliquer sur leurs liens. Ouvre les liens d'invitation dans une fenêtre privée.
+- Pour recevoir de vrais e-mails, renseigne `SMTP_URL` dans `.env` (voir la section « Mettre en ligne »), puis relance l'application.
 
 
 ### Lancer l'application avec les mises à jour automatiques (Windows)

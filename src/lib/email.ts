@@ -1,17 +1,43 @@
 /**
  * Envoi des e-mails.
  *
- * - En production : par le serveur SMTP indiqué dans SMTP_URL
- *   (par exemple smtps://utilisateur:motdepasse@smtp.exemple.fr:465).
- * - Sans SMTP_URL (développement) : l'e-mail est affiché dans le terminal,
- *   ce qui permet de cliquer sur les liens sans configurer de messagerie.
+ * - Avec SMTP_URL (production, ou pour tester avec une vraie boîte) : envoi par ce serveur SMTP,
+ *   par exemple smtps://utilisateur:motdepasse@smtp.exemple.fr:465.
+ * - Sans SMTP_URL (mode test) : rien n'est envoyé. L'e-mail est affiché dans le terminal et rangé
+ *   dans le fichier .emails-test.json, que le super-administrateur consulte sur /admin/emails.
  */
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import nodemailer from "nodemailer";
 
 export type Email = { a: string | string[]; sujet: string; texte: string; html: string };
+export type EmailTest = Email & { date: string };
 
-/** Derniers e-mails « envoyés » sans SMTP (utile pour les tests). */
+/** Derniers e-mails « envoyés » sans SMTP, en mémoire (utilisé par les tests automatiques). */
 export const boiteDeDev: Email[] = [];
+
+const FICHIER_TEST = path.join(process.cwd(), ".emails-test.json");
+const MAX_TEST = 50;
+
+export const smtpConfigure = () => Boolean(process.env.SMTP_URL);
+
+/** E-mails du mode test, du plus récent au plus ancien. Le fichier survit aux redémarrages. */
+export function lireEmailsTest(): EmailTest[] {
+  try {
+    return existsSync(FICHIER_TEST) ? (JSON.parse(readFileSync(FICHIER_TEST, "utf8")) as EmailTest[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rangerEmailTest(e: Email) {
+  const liste = [{ ...e, date: new Date().toISOString() }, ...lireEmailsTest()].slice(0, MAX_TEST);
+  try { writeFileSync(FICHIER_TEST, JSON.stringify(liste, null, 2)); } catch (err) { console.error("E-mail de test non enregistré :", err); }
+}
+
+export function viderEmailsTest() {
+  try { writeFileSync(FICHIER_TEST, "[]"); } catch { /* rien à vider */ }
+}
 
 let transport: nodemailer.Transporter | null = null;
 
@@ -19,9 +45,10 @@ export async function envoyerEmail(e: Email) {
   const url = process.env.SMTP_URL;
   if (!url) {
     boiteDeDev.push(e);
-    if (boiteDeDev.length > 50) boiteDeDev.shift();
+    if (boiteDeDev.length > MAX_TEST) boiteDeDev.shift();
     if (process.env.NODE_ENV !== "test") {
-      console.log(`\n──── E-mail (non envoyé : SMTP_URL absent) ────\nÀ : ${[e.a].flat().join(", ")}\nObjet : ${e.sujet}\n\n${e.texte}\n────────────────────────────────────────────────\n`);
+      rangerEmailTest(e);
+      console.log(`\n──── E-mail de test (non envoyé : SMTP_URL absent) ────\nÀ : ${[e.a].flat().join(", ")}\nObjet : ${e.sujet}\n\n${e.texte}\nÀ retrouver aussi sur ${urlApplication("/admin/emails")}\n───────────────────────────────────────────────────────\n`);
     }
     return;
   }

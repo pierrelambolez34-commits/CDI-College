@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { executer } from "@/lib/actions";
 import { accepterDemande, refuserDemande, renvoyerInvitation } from "@/lib/data/demandes";
+import { smtpConfigure } from "@/lib/email";
 import { superAdmin } from "@/lib/session";
 import { z } from "zod";
 
@@ -14,7 +15,9 @@ export async function actionAccepter(demandeId: string) {
     return c.nom;
   });
   revalidatePath("/admin");
-  return r.ok ? { ok: true as const, message: `${r.donnees} est créé. L'invitation est partie par e-mail.` } : r;
+  return r.ok ? { ok: true as const, message: smtpConfigure()
+    ? `${r.donnees} est créé. L'invitation est partie par e-mail.`
+    : `${r.donnees} est créé. Mode test : l'invitation est dans « E-mails de test ».` } : r;
 }
 
 export async function actionRefuser(demandeId: string) {
@@ -26,7 +29,7 @@ export async function actionRefuser(demandeId: string) {
 
 export async function actionRenvoyer(userId: string) {
   await superAdmin();
-  const r = await executer(() => renvoyerInvitation(id.parse(userId)), "Nouvelle invitation envoyée.");
+  const r = await executer(() => renvoyerInvitation(id.parse(userId)), smtpConfigure() ? "Nouvelle invitation envoyée." : "Nouvelle invitation dans « E-mails de test ».");
   revalidatePath("/admin");
   return r;
 }

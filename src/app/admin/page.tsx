@@ -2,7 +2,9 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { seDeconnecter } from "@/app/connexion/actions";
 import { invitationsEnAttente, listerDemandes } from "@/lib/data/demandes";
+import { smtpConfigure } from "@/lib/email";
 import { superAdmin } from "@/lib/session";
+import Link from "next/link";
 import { BoutonRenvoyer, DecisionDemande } from "./Boutons";
 
 export const metadata = { title: "Collèges" };
@@ -30,10 +32,15 @@ export default async function Admin() {
     <>
       <nav className="nav"><div className="nav-in">
         <span className="logo">Passages CDI</span>
-        <div className="nav-links"><a aria-current="page" href="/admin">Collèges</a></div>
+        <div className="nav-links"><Link aria-current="page" href="/admin">Collèges</Link><Link href="/admin/emails">E-mails de test</Link></div>
         <div className="nav-user"><span>{u.nom}</span><form action={seDeconnecter}><button className="btn ghost sm">Se déconnecter</button></form></div>
       </div></nav>
       <main className="wrap">
+        {!smtpConfigure() && (
+          <div className="alert warn" style={{ marginTop: 0 }}>
+            Mode test : les e-mails (demandes, invitations) ne sont pas réellement envoyés. <Link href="/admin/emails">Voir les e-mails de test</Link>.
+          </div>
+        )}
         <div className="page-head"><h1>Collèges</h1><span className="muted">{colleges.length} établissement{colleges.length > 1 ? "s" : ""}</span></div>
 
         <section className="panel">

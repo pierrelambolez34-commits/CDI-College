@@ -6,3 +6,5 @@ next-env.d.ts
 # Ne jamais versionner de vrais fichiers d'élèves
 *.csv
 !tests/fixtures/*.csv
+# E-mails du mode test (aucun envoi réel)
+.emails-test.json
