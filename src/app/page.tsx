@@ -1,12 +1,16 @@
 /**
- * Page d'accueil publique.
- * Un visiteur voit la présentation ; une personne déjà connectée est envoyée dans l'application.
+ * Page d'accueil : la page par défaut du site, pour tout le monde.
+ * Un visiteur voit « Connexion » et « Ouvrir mon CDI » ; une personne connectée voit « Mon espace ».
  *
+ * Photo du hero : déposez public/accueil/eleves-cdi.jpg (ou .webp / .png).
+ * Tant qu'elle n'existe pas, l'illustration public/accueil/illustration-cdi.svg est affichée.
  * Les textes entre crochets (classe « lp-tbd ») sont des informations à compléter avant la mise en ligne.
  */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import Icone from "@/components/Icone";
+import Logo from "@/components/Logo";
+import { photoAccueil } from "@/lib/photo";
 import { utilisateurConnecte } from "@/lib/session";
 import "./accueil.css";
 
@@ -22,19 +26,19 @@ export const dynamic = "force-dynamic";
 
 const ETAPES = [
   {
-    num: "01", nom: "Présence", titre: "Chaque passage noté en 3 touches.",
+    num: "01", nom: "Présence", icone: "clavier", couleur: "var(--accent)", titre: "Chaque passage noté en 3 touches.",
     texte: "Tapez quelques lettres du nom ou la classe, Entrée, le numéro du motif. Le créneau horaire est détecté automatiquement. Fonctionne sur ordinateur et tablette.",
   },
   {
-    num: "02", nom: "Planning", titre: "Votre CDI, créneau par créneau.",
+    num: "02", nom: "Planning", icone: "calendrier", couleur: "var(--mint)", titre: "Votre CDI, créneau par créneau.",
     texte: "Paramétrez cours, récréations, pause méridienne et horaires d'ouverture : chaque passage est rattaché au bon créneau sans saisie supplémentaire. Repérez d'un coup d'œil les créneaux saturés et les créneaux creux.",
   },
   {
-    num: "03", nom: "Statistiques", titre: "La fréquentation, enfin visible.",
+    num: "03", nom: "Statistiques", icone: "graphique", couleur: "var(--sun)", titre: "La fréquentation, enfin visible.",
     texte: "Motifs de venue, heures de pointe, tendances semaine après semaine, part des élèves touchés par niveau. Toujours à jour, sans recompter.",
   },
   {
-    num: "04", nom: "Bilan IA", titre: "Votre bilan de fin de période, rédigé pour vous.", phare: true,
+    num: "04", nom: "Bilan IA", icone: "etincelles", couleur: "var(--pep)", titre: "Votre bilan de fin de période, rédigé pour vous.", phare: true,
     texte: "Choisissez la période et le format (note à la direction, synthèse, conseil pédagogique ou d'administration) : l'IA rédige un texte structuré à partir de vos chiffres, que vous relisez et ajustez, puis exportez en PDF avec les statistiques en annexe.",
   },
 ];
@@ -42,6 +46,13 @@ const ETAPES = [
 const MOTIFS_BILAN = [
   { l: "Lecture plaisir", n: 412 }, { l: "Recherche documentaire", n: 318 }, { l: "Devoirs, révisions", n: 236 },
   { l: "Emprunt ou retour", n: 171 }, { l: "Jeux, club", n: 147 },
+];
+
+const SECURITE = [
+  { icone: "document", titre: "Trois données par élève", texte: "Nom, prénom et classe. Ni date de naissance, ni adresse, ni coordonnées des familles." },
+  { icone: "ordinateur", titre: "Le fichier reste sur votre ordinateur", texte: "L'export Pronote ou SIECLE est lu dans votre navigateur : les colonnes des responsables légaux ne sont jamais envoyées." },
+  { icone: "ecole", titre: "Un espace par collège", texte: "Chaque établissement ne voit que ses propres données. Ce cloisonnement est vérifié par des tests automatiques." },
+  { icone: "cadenas", titre: "Des accès maîtrisés", texte: "Comptes nominatifs, mots de passe chiffrés. Seul l'administrateur du CDI modifie le paramétrage." },
 ];
 
 const FAQ: { q: string; r: React.ReactNode }[] = [
@@ -57,23 +68,25 @@ const FAQ: { q: string; r: React.ReactNode }[] = [
 
 export default async function Accueil() {
   const u = await utilisateurConnecte();
-  if (u) redirect(u.role === "superadmin" ? "/admin" : "/saisie");
-
+  const espace = u ? (u.role === "superadmin" ? "/admin" : "/saisie") : null;
+  const photo = photoAccueil();
   const maxMotif = Math.max(...MOTIFS_BILAN.map((m) => m.n));
 
   return (
     <div className="lp">
       <header className="lp-nav">
         <div className="lp-in">
-          <Link href="/" className="lp-logo">{NOM}</Link>
+          <Logo />
           <nav className="lp-liens" aria-label="Navigation principale">
             <a className="ancre" href="#etapes">Les 4 étapes</a>
             <a className="ancre" href="#apercu">Comment ça marche</a>
             <a className="ancre" href="#securite">Sécurité</a>
             <a className="ancre" href="#faq">FAQ</a>
-            <Link href="/connexion">Connexion</Link>
+            {!espace && <Link href="/connexion">Connexion</Link>}
           </nav>
-          <Link href={CTA.href} className="lp-btn principal petit">{CTA.texte}</Link>
+          {espace
+            ? <Link href={espace} className="lp-btn principal petit">Mon espace <Icone nom="fleche" taille={16} /></Link>
+            : <Link href={CTA.href} className="lp-btn principal petit cta-nav">{CTA.texte}</Link>}
         </div>
       </header>
 
@@ -81,51 +94,52 @@ export default async function Accueil() {
         {/* 1. Hero */}
         <section className="lp-hero">
           <div className="lp-in">
-            <div>
-              <p className="lp-sur">Pour les professeurs documentalistes de collège</p>
-              <h1>Le bilan de votre CDI, prêt en 2 minutes.</h1>
+            <div className="lp-hero-texte">
+              <p className="lp-pilule"><Icone nom="etincelles" taille={16} /> Pour les professeurs documentalistes de collège</p>
+              <h1>Le bilan de votre CDI, prêt en <span className="surligne">2&nbsp;minutes.</span></h1>
               <p className="lp-intro">Enregistrez chaque passage en 3 touches. {NOM} suit la fréquentation, repère les heures d&apos;affluence et rédige votre bilan de fin de période avec l&apos;IA, prêt à présenter à la direction.</p>
               <div className="lp-ctas">
-                <Link href={CTA.href} className="lp-btn principal">{CTA.texte}</Link>
-                <a href={DEMO.href} className="lp-btn">{DEMO.texte}</a>
+                {espace
+                  ? <Link href={espace} className="lp-btn principal">Accéder à mon espace <Icone nom="fleche" taille={18} /></Link>
+                  : <Link href={CTA.href} className="lp-btn principal">{CTA.texte} <Icone nom="fleche" taille={18} /></Link>}
+                <a href={DEMO.href} className="lp-btn"><Icone nom="lecture" taille={16} /> {DEMO.texte}</a>
               </div>
-              <p className="lp-rassure"><span>Gratuit</span><span>Sans engagement</span><span>Installation en 15 minutes</span><span>Conforme RGPD</span></p>
+              <ul className="lp-rassure">
+                {["Gratuit", "Sans engagement", "Installation en 15 minutes", "Conforme RGPD"].map((t) => (
+                  <li key={t}><Icone nom="check" taille={16} />{t}</li>
+                ))}
+              </ul>
             </div>
 
-            <div className="lp-pile" role="img" aria-label="Aperçu de l'application : un passage enregistré, un graphique des motifs de la semaine et un extrait de bilan rédigé par l'IA">
-              <div className="lp-carte passage" aria-hidden="true">
-                <div className="titre"><span>Saisie</span><span>Mardi · 9:52</span></div>
-                <div className="lp-ok">
-                  <span className="coche">✓</span>
-                  <div><b>Passage enregistré</b><small>Inès B. · 5C · Lecture plaisir</small></div>
-                </div>
-                <div className="lp-touches"><kbd>i</kbd><kbd>n</kbd><kbd>è</kbd><kbd>Entrée</kbd><kbd>1</kbd><span className="lp-pastille">Récréation détectée</span></div>
+            <div className="lp-visuel">
+              <figure className="lp-photo">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo}
+                  alt="Des élèves entrent au CDI en souriant"
+                  width={1200} height={1000} fetchPriority="high"
+                />
+              </figure>
+              <div className="lp-flottant passage" aria-hidden="true">
+                <span className="coche"><Icone nom="check" taille={18} /></span>
+                <div><b>Passage enregistré</b><small>Inès B. · 5C · Lecture plaisir</small></div>
               </div>
-
-              <div className="lp-carte stats" aria-hidden="true">
-                <div className="titre"><span>Motifs cette semaine</span></div>
-                <div className="lp-barres">
-                  {[["Lecture", 38], ["Recherche", 27], ["Devoirs", 21], ["Emprunt", 14]].map(([l, n]) => (
-                    <div key={l} style={{ height: `${(Number(n) / 38) * 100}%` }}><span>{n}</span></div>
-                  ))}
-                </div>
-                <div className="lp-etiquettes"><span>Lecture</span><span>Recherche</span><span>Devoirs</span><span>Emprunt</span></div>
+              <div className="lp-flottant creneau" aria-hidden="true">
+                <Icone nom="horloge" taille={16} /><span>Récréation détectée · 9:52</span>
               </div>
-
-              <div className="lp-carte bilan" aria-hidden="true">
-                <div className="titre"><span>Bilan du 1er trimestre</span><span className="lp-ia">Généré par IA</span></div>
-                <p>Au premier trimestre, le CDI a accueilli 1 284 passages, soit une vingtaine par jour d&apos;ouverture. La pause méridienne concentre 41 % de la fréquentation, portée par la lecture plaisir.</p>
+              <div className="lp-flottant bilan" aria-hidden="true">
+                <span className="lp-ia"><Icone nom="etincelles" taille={14} /> Bilan rédigé par l&apos;IA</span>
+                <p>« La pause méridienne concentre 41 % de la fréquentation, portée par la lecture plaisir. »</p>
               </div>
             </div>
           </div>
 
           <div className="lp-in">
-            <div className="lp-chiffres">
-              <div><b>3 touches</b><span>par passage</span></div>
-              <div><b>15 min</b><span>d&apos;installation</span></div>
-              <div><b>0 feuille</b><span>papier à recompter</span></div>
-              <div><b>2 min</b><span>pour générer le bilan</span></div>
-            </div>
+            <dl className="lp-chiffres">
+              {[["3 touches", "par passage", "clavier"], ["15 min", "d'installation", "horloge"], ["0 feuille", "papier à recompter", "document"], ["2 min", "pour générer le bilan", "etincelles"]].map(([v, l, i]) => (
+                <div key={v}><span className="ic"><Icone nom={i} taille={20} /></span><dt>{l}</dt><dd>{v}</dd></div>
+              ))}
+            </dl>
           </div>
         </section>
 
@@ -139,20 +153,21 @@ export default async function Accueil() {
             </div>
             <ol className="lp-etapes">
               {ETAPES.map((e) => (
-                <li key={e.num} className={`lp-etape ${e.phare ? "phare" : ""}`}>
-                  <span className="lp-num" aria-hidden="true">{e.num}</span>
-                  <div className="corps">
+                <li key={e.num} className={`lp-etape ${e.phare ? "phare" : ""}`} style={{ "--c": e.couleur } as React.CSSProperties}>
+                  <div className="haut">
+                    <span className="ic"><Icone nom={e.icone} taille={22} /></span>
+                    <span className="num">{e.num}</span>
                     {e.phare && <span className="lp-badge">Le plus apprécié</span>}
-                    <span className="nom">{e.nom}</span>
-                    <h3>{e.titre}</h3>
-                    <p>{e.texte}</p>
                   </div>
+                  <span className="nom">{e.nom}</span>
+                  <h3>{e.titre}</h3>
+                  <p>{e.texte}</p>
                 </li>
               ))}
             </ol>
             <div className="lp-plus">
-              <div><b>Travail en équipe</b>Les AED et les collègues saisissent les passages ; seul l&apos;administrateur paramètre.</div>
-              <div><b>Import CSV</b>Les listes d&apos;élèves se mettent à jour depuis Pronote ou SIECLE, sans perdre l&apos;historique.</div>
+              <div><span className="ic"><Icone nom="equipe" /></span><p><b>Travail en équipe</b>Les AED et les collègues saisissent les passages ; seul l&apos;administrateur paramètre.</p></div>
+              <div><span className="ic"><Icone nom="import" /></span><p><b>Import CSV</b>Les listes d&apos;élèves se mettent à jour depuis Pronote ou SIECLE, sans perdre l&apos;historique.</p></div>
             </div>
           </div>
         </section>
@@ -163,12 +178,12 @@ export default async function Accueil() {
             <div>
               <p className="lp-sur">Aperçu du bilan</p>
               <h2>Ce que vous présenterez à votre direction</h2>
-              <ul>
-                <li>Un texte rédigé à partir de vos chiffres, que vous relisez et ajustez.</li>
-                <li>Les indicateurs clés de la période, par niveau et par créneau.</li>
-                <li>Un export PDF, avec les statistiques détaillées en annexe.</li>
+              <ul className="lp-liste">
+                <li><Icone nom="check" taille={18} />Un texte rédigé à partir de vos chiffres, que vous relisez et ajustez.</li>
+                <li><Icone nom="check" taille={18} />Les indicateurs clés de la période, par niveau et par créneau.</li>
+                <li><Icone nom="check" taille={18} />Un export PDF, avec les statistiques détaillées en annexe.</li>
               </ul>
-              <a href={DEMO.href} className="lp-btn">{DEMO.texte}</a>
+              <a href={DEMO.href} className="lp-btn"><Icone nom="lecture" taille={16} /> {DEMO.texte}</a>
             </div>
 
             <article className="lp-a4" aria-label="Exemple de bilan d'activité, données fictives">
@@ -202,19 +217,15 @@ export default async function Accueil() {
               <div className="avant">
                 <h3>Avec le cahier papier</h3>
                 <ul>
-                  <li>Un cahier à l&apos;accueil, rempli quand on y pense.</li>
-                  <li>Des motifs notés en abrégé, difficiles à comparer d&apos;une année à l&apos;autre.</li>
-                  <li>Aucune vue des créneaux saturés ou creux.</li>
-                  <li className="fort">Le bilan annuel : un week-end de comptage.</li>
+                  {["Un cahier à l'accueil, rempli quand on y pense.", "Des motifs notés en abrégé, difficiles à comparer d'une année à l'autre.", "Aucune vue des créneaux saturés ou creux."].map((t) => <li key={t}><Icone nom="x" taille={18} />{t}</li>)}
+                  <li className="fort"><Icone nom="x" taille={18} />Le bilan annuel : un week-end de comptage.</li>
                 </ul>
               </div>
               <div className="apres">
                 <h3>Avec {NOM}</h3>
                 <ul>
-                  <li>Chaque passage noté en 3 touches, au moment où l&apos;élève entre.</li>
-                  <li>Des motifs choisis dans votre liste, comparables d&apos;une période à l&apos;autre.</li>
-                  <li>La fréquentation par créneau, toujours à jour.</li>
-                  <li className="fort">Le bilan annuel : 2 minutes, rédigé par l&apos;IA.</li>
+                  {["Chaque passage noté en 3 touches, au moment où l'élève entre.", "Des motifs choisis dans votre liste, comparables d'une période à l'autre.", "La fréquentation par créneau, toujours à jour."].map((t) => <li key={t}><Icone nom="check" taille={18} />{t}</li>)}
+                  <li className="fort"><Icone nom="check" taille={18} />Le bilan annuel : 2 minutes, rédigé par l&apos;IA.</li>
                 </ul>
               </div>
             </div>
@@ -229,21 +240,21 @@ export default async function Accueil() {
               <h2>Des données d&apos;élèves réduites au strict nécessaire</h2>
             </div>
             <div className="lp-secu">
-              <div><span className="icone">3</span><h3>Trois données par élève</h3><p>Nom, prénom et classe. Ni date de naissance, ni adresse, ni coordonnées des familles.</p></div>
-              <div><span className="icone">⇣</span><h3>Le fichier reste sur votre ordinateur</h3><p>L&apos;export Pronote ou SIECLE est lu dans votre navigateur : les colonnes des responsables légaux ne sont jamais envoyées.</p></div>
-              <div><span className="icone">▣</span><h3>Un espace par collège</h3><p>Chaque établissement ne voit que ses propres données. Ce cloisonnement est vérifié par des tests automatiques.</p></div>
-              <div><span className="icone">⚿</span><h3>Des accès maîtrisés</h3><p>Comptes nominatifs, mots de passe chiffrés. Seul l&apos;administrateur du CDI modifie le paramétrage.</p></div>
-              <div className="ia"><span className="icone">IA</span><h3>IA et confidentialité</h3><p><span className="lp-tbd">[À confirmer : seules des statistiques agrégées sont transmises à l&apos;IA, jamais les noms des élèves.]</span></p></div>
+              {SECURITE.map((s) => (
+                <div key={s.titre}><span className="ic"><Icone nom={s.icone} /></span><h3>{s.titre}</h3><p>{s.texte}</p></div>
+              ))}
+              <div className="ia"><span className="ic"><Icone nom="bouclier" /></span><h3>IA et confidentialité</h3><p><span className="lp-tbd">[À confirmer : seules des statistiques agrégées sont transmises à l&apos;IA, jamais les noms des élèves.]</span></p></div>
             </div>
           </div>
         </section>
 
         {/* 6. FAQ */}
         <section id="faq">
-          <div className="lp-in">
+          <div className="lp-in lp-faq-grille">
             <div className="lp-tete">
               <p className="lp-sur">FAQ</p>
               <h2>Questions fréquentes</h2>
+              <p className="lp-intro">Une autre question ? Écrivez-nous depuis l&apos;espace de votre collège.</p>
             </div>
             <div className="lp-faq">
               {FAQ.map((f) => (
@@ -254,19 +265,27 @@ export default async function Accueil() {
         </section>
 
         {/* 7. Appel final */}
-        <section className="lp-final lp-fond">
+        <section className="lp-final">
           <div className="lp-in">
-            <h2>Votre prochain bilan, sans recompter.</h2>
-            <p>Ouvrez l&apos;espace de votre collège en 15 minutes.</p>
-            <Link href={CTA.href} className="lp-btn principal">{CTA.texte}</Link>
+            <div className="bandeau">
+              <h2>Votre prochain bilan, sans recompter.</h2>
+              <p>Ouvrez l&apos;espace de votre collège en 15 minutes.</p>
+              {espace
+                ? <Link href={espace} className="lp-btn clair">Accéder à mon espace <Icone nom="fleche" taille={18} /></Link>
+                : <Link href={CTA.href} className="lp-btn clair">{CTA.texte} <Icone nom="fleche" taille={18} /></Link>}
+            </div>
           </div>
         </section>
       </main>
 
       <footer className="lp-pied">
         <div className="lp-in">
-          <span>{NOM} · Pour les CDI de collège</span>
-          <nav aria-label="Liens du pied de page"><Link href="/connexion">Connexion</Link><Link href={CTA.href}>Ouvrir mon CDI</Link><a href="#faq">FAQ</a></nav>
+          <Logo />
+          <nav aria-label="Liens du pied de page">
+            {espace ? <Link href={espace}>Mon espace</Link> : <><Link href="/connexion">Connexion</Link><Link href={CTA.href}>Ouvrir mon CDI</Link></>}
+            <a href="#faq">FAQ</a>
+          </nav>
+          <span>Pour les CDI de collège</span>
         </div>
       </footer>
     </div>

@@ -1,4 +1,5 @@
 "use client";
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { seDeconnecter } from "@/app/connexion/actions";
@@ -15,7 +16,7 @@ export default function Navigation({ nomCollege, nomUtilisateur, admin }: Props)
   return (
     <nav className="nav">
       <div className="nav-in">
-        <Link href="/saisie" className="logo">Passages CDI</Link>
+        <Logo />
         <div className="nav-links">
           {liens.map((l) => (
             <Link key={l.href} href={l.href} aria-current={chemin.startsWith(l.href) ? "page" : undefined}>{l.label}</Link>

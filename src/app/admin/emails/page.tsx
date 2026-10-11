@@ -1,3 +1,4 @@
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import { seDeconnecter } from "@/app/connexion/actions";
 import { lireEmailsTest, smtpConfigure } from "@/lib/email";
@@ -20,7 +21,7 @@ export default async function EmailsTest() {
   return (
     <>
       <nav className="nav"><div className="nav-in">
-        <span className="logo">Passages CDI</span>
+        <Logo />
         <div className="nav-links"><Link href="/admin">Collèges</Link><Link href="/admin/emails" aria-current="page">E-mails de test</Link></div>
         <div className="nav-user"><span>{u.nom}</span><form action={seDeconnecter}><button className="btn ghost sm">Se déconnecter</button></form></div>
       </div></nav>

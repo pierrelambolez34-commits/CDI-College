@@ -57,6 +57,12 @@ Le script démarre la base de données, récupère la dernière version sur GitH
 puis vérifie GitHub toutes les 15 secondes : à chaque nouvelle version, il l'installe et relance l'application tout seul.
 Il suffit ensuite de recharger la page (F5). Pour arrêter : `Ctrl + C`.
 
+### Photo de la page d'accueil
+
+Déposez une photo d'élèves qui entrent au CDI dans `public/accueil/`, nommée **`eleves-cdi.jpg`** (ou `.webp`, `.png`) : paysage, environ 6:5, au moins 1 400 px de large, moins de 400 Ko.
+Elle remplace aussitôt l'illustration du hero et de l'écran de connexion. Utilisez une photo dont vous avez les droits
+(banque d'images libre avec usage commercial autorisé, ou photo prise au collège avec l'accord écrit des responsables légaux des élèves visibles).
+
 ## 2. Les commandes utiles
 
 | Commande | Effet |
@@ -82,6 +88,7 @@ src/
     data/stats.ts         Calcul des statistiques et export CSV
     data/demandes.ts      Inscription d'un collège, e-mail d'activation, choix du mot de passe
     email.ts              Envoi des e-mails (SMTP), modèle de mise en page
+    photo.ts              Photo de la page d'accueil (ou illustration par défaut)
     limite.ts             Limite du nombre de tentatives (connexion, demandes)
     csv.ts                Lecture du fichier Pronote/SIECLE (s'exécute dans le navigateur)
     horaires.ts           Vérification des plages horaires

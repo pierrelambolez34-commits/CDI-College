@@ -1,3 +1,4 @@
+import Logo from "@/components/Logo";
 import Link from "next/link";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -30,7 +31,7 @@ export default async function Admin() {
   return (
     <>
       <nav className="nav"><div className="nav-in">
-        <span className="logo">Passages CDI</span>
+        <Logo />
         <div className="nav-links"><Link aria-current="page" href="/admin">Collèges</Link><Link href="/admin/emails">E-mails de test</Link></div>
         <div className="nav-user"><span>{u.nom}</span><form action={seDeconnecter}><button className="btn ghost sm">Se déconnecter</button></form></div>
       </div></nav>
