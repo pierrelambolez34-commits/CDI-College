@@ -1,10 +1,12 @@
+import Link from "next/link";
+
 /** Mise en page des écrans publics : présentation à gauche, formulaire à droite. */
 export default function CadreAccueil({ children }: { children: React.ReactNode }) {
   return (
     <div className="auth">
       <aside className="auth-brand">
         <div>
-          <div className="marque">Passages CDI</div>
+          <Link href="/" className="marque" style={{ color: "inherit", textDecoration: "none" }}>Passages CDI</Link>
           <h2>Savoir ce que les élèves viennent faire au CDI.</h2>
         </div>
         <ul className="points">
