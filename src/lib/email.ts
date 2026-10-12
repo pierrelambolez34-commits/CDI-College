@@ -1,9 +1,8 @@
 /**
  * Envoi des e-mails.
  *
- * - Avec SMTP_URL (production, ou pour tester avec une vraie boîte) : envoi par ce serveur SMTP,
- *   par exemple smtps://utilisateur:motdepasse@smtp.exemple.fr:465.
- * - Sans SMTP_URL (mode test) : rien n'est envoyé. L'e-mail est affiché dans le terminal et rangé
+ * - Avec SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (ou une seule variable SMTP_URL) : envoi réel par ce serveur.
+ * - Sans réglage SMTP (mode test) : rien n'est envoyé. L'e-mail est affiché dans le terminal et rangé
  *   dans le fichier .emails-test.json, que le super-administrateur consulte sur /admin/emails.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -19,7 +18,7 @@ export const boiteDeDev: Email[] = [];
 const FICHIER_TEST = path.join(process.cwd(), ".emails-test.json");
 const MAX_TEST = 50;
 
-export const smtpConfigure = () => Boolean(process.env.SMTP_URL);
+export const smtpConfigure = () => Boolean(process.env.SMTP_URL || process.env.SMTP_HOST);
 
 /** E-mails du mode test, du plus récent au plus ancien. Le fichier survit aux redémarrages. */
 export function lireEmailsTest(): EmailTest[] {
@@ -42,17 +41,24 @@ export function viderEmailsTest() {
 let transport: nodemailer.Transporter | null = null;
 
 export async function envoyerEmail(e: Email) {
-  const url = process.env.SMTP_URL;
-  if (!url) {
+  if (!smtpConfigure()) {
     boiteDeDev.push(e);
     if (boiteDeDev.length > MAX_TEST) boiteDeDev.shift();
     if (process.env.NODE_ENV !== "test") {
       rangerEmailTest(e);
-      console.log(`\n──── E-mail de test (non envoyé : SMTP_URL absent) ────\nÀ : ${[e.a].flat().join(", ")}\nObjet : ${e.sujet}\n\n${e.texte}\nÀ retrouver aussi sur ${urlApplication("/admin/emails")}\n───────────────────────────────────────────────────────\n`);
+      console.log(`\n──── E-mail de test (non envoyé : aucun serveur SMTP configuré) ────\nÀ : ${[e.a].flat().join(", ")}\nObjet : ${e.sujet}\n\n${e.texte}\nÀ retrouver aussi sur ${urlApplication("/admin/emails")}\n───────────────────────────────────────────────────────\n`);
     }
     return;
   }
-  transport ??= nodemailer.createTransport(url);
+  if (!transport) {
+    const port = Number(process.env.SMTP_PORT ?? 587);
+    transport = process.env.SMTP_URL
+      ? nodemailer.createTransport(process.env.SMTP_URL)
+      : nodemailer.createTransport({
+          host: process.env.SMTP_HOST, port, secure: port === 465,
+          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        });
+  }
   await transport.sendMail({
     from: process.env.MAIL_FROM ?? "Passages CDI <no-reply@passages-cdi.fr>",
     to: e.a, subject: e.sujet, text: e.texte, html: e.html,

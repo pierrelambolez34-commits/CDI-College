@@ -72,7 +72,7 @@ Elle remplace aussitôt l'illustration du hero et de l'écran de connexion. Util
 | `npm run typecheck` | Vérifie le code TypeScript sans le lancer |
 | `npm run build` puis `npm start` | Version de production |
 | `npm run db:generate` | Après une modification de `src/db/schema.ts` : crée le fichier de migration |
-| `npm run db:migrate` | Applique les migrations à la base |
+| `npm run db:migrate` | Applique les migrations à la base (lancé automatiquement en ligne après chaque déploiement) |
 | `npm run db:demo` | Recrée le collège de démonstration |
 
 ## 3. Où se trouve quoi
@@ -125,15 +125,34 @@ drizzle/                  Fichiers de migration SQL (générés)
 - Les mots de passe sont chiffrés (bcrypt) ; la session est un cookie sécurisé valable 30 jours.
 - À prévoir avant la commercialisation : hébergement en France, contrat de sous-traitance (article 28) à faire signer par chaque chef d'établissement, durée de conservation et suppression automatique des données anciennes.
 
-## 6. Mettre en ligne
+## 6. Mettre en ligne (Scalingo, hébergement en France)
 
-L'application a besoin d'un hébergeur Node.js et d'une base PostgreSQL. Par exemple chez **Scalingo** ou **Clever Cloud** (hébergement en France) :
+Le projet est prêt pour Scalingo : `Procfile` (démarrage sur le port fourni, mise à jour de la base après chaque déploiement),
+version de Node.js fixée, scripts de base de données sans outils de développement.
 
-1. Crée une application Node.js et ajoute une base PostgreSQL.
-2. Renseigne les variables `DATABASE_URL`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`, `APP_URL` (l'adresse publique, pour les liens des e-mails), `SMTP_URL`, `MAIL_FROM` et `NODE_ENV=production`.
-   Pour `SMTP_URL`, un service d'envoi français comme Brevo fournit des identifiants SMTP : `smtps://identifiant:motdepasse@smtp-relay.brevo.com:465`.
-3. Commande de construction : `npm run build` ; commande de démarrage : `npm run db:migrate && npm start`.
-4. Une fois en ligne, lance une fois `npm run db:superadmin` depuis la console de l'hébergeur.
+1. **Créer le compte** sur https://scalingo.com (30 jours d'essai), région **osc-fr1** (Paris).
+2. **Créer l'application** (par exemple `passages-cdi`), puis l'onglet *Code* → relier le dépôt GitHub `CDI-College`, branche `main`.
+3. **Ajouter la base** : onglet *Addons* → PostgreSQL, offre Starter 512M. Scalingo crée tout seul la variable `SCALINGO_POSTGRESQL_URL`.
+4. **Choisir la taille** : onglet *Resources* → conteneur **M** (512 Mo ; le S est trop juste pour Next.js).
+5. **Créer le compte d'envoi d'e-mails** sur https://www.brevo.com (offre gratuite : 300 e-mails par jour). Dans *SMTP & API*, noter l'identifiant et la clé SMTP ; dans *Expéditeurs*, valider l'adresse d'expédition.
+6. **Renseigner les variables** : onglet *Environment* :
+   | Variable | Valeur |
+   |---|---|
+   | `APP_URL` | l'adresse de l'application, par exemple `https://passages-cdi.osc-fr1.scalingo.io` |
+   | `SMTP_HOST` | `smtp-relay.brevo.com` |
+   | `SMTP_PORT` | `587` |
+   | `SMTP_USER` | l'identifiant SMTP Brevo |
+   | `SMTP_PASS` | la clé SMTP Brevo |
+   | `MAIL_FROM` | `Passages CDI <adresse validée dans Brevo>` |
+   | `SUPERADMIN_EMAIL` | ton adresse |
+   | `SUPERADMIN_PASSWORD` | un mot de passe d'au moins 14 caractères |
+7. **Déployer** : onglet *Deploy* → *Manual deployment* → `main`. La base est mise à jour automatiquement à la fin.
+8. **Créer ton compte super-administrateur** une fois : bouton *Run* / console de l'application → `npm run db:superadmin`.
+9. **Tester** : ouvrir l'adresse, s'inscrire avec une vraie adresse e-mail, vérifier la réception de l'e-mail d'activation.
+
+Ensuite, chaque nouvelle version se met en ligne en cliquant à nouveau sur *Manual deployment* (ou en activant le déploiement automatique, déconseillé tant que l'application évolue beaucoup).
+
+Ne jamais lancer `npm run db:demo` en ligne : le script le refuse.
 
 ## 7. Prochaines étapes possibles
 

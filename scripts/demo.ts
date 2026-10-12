@@ -42,6 +42,7 @@ function tirerMotif(type: string) {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production") throw new Error("Le collège de démonstration ne se crée pas sur l'application en ligne.");
   // Nettoyage : le collège de démonstration précédent, et tout collège créé avec une adresse de démonstration
   const EMAILS_DEMO = ["demo@exemple.fr", "assistant@exemple.fr"];
   const comptes = await db.select({ collegeId: schema.users.collegeId }).from(schema.users).where(inArray(schema.users.email, EMAILS_DEMO));

@@ -8,8 +8,8 @@
     "build": "next build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "db:superadmin": "tsx scripts/creer-superadmin.ts",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:superadmin": "node scripts/creer-superadmin.mjs",
     "db:demo": "tsx scripts/demo.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
@@ -38,5 +38,8 @@
     "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
