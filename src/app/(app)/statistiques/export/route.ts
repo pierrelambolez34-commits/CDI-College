@@ -10,8 +10,8 @@ export async function GET(req: Request) {
   const lignes = await lignesExport(u.collegeId, lireFiltres(params));
   const cellule = (s: string) => (/[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
   const csv = [
-    ["Date", "Heure", "Nom", "Prénom", "Classe", "Niveau", "Type de plage", "Motif"].join(";"),
-    ...lignes.map((l) => [l.jour, formatMinute(l.minute), l.nom, l.prenom, l.division, l.niveau, l.type_plage, l.motif].map(cellule).join(";")),
+    ["Date", "Heure", "Nom", "Prénom", "Classe", "Niveau", "Type de plage", "Motif", "Projet"].join(";"),
+    ...lignes.map((l) => [l.jour, formatMinute(l.minute), l.nom, l.prenom, l.division, l.niveau, l.type_plage, l.motif, l.projet ?? ""].map(cellule).join(";")),
   ].join("\r\n");
   return new Response("﻿" + csv, {
     headers: {

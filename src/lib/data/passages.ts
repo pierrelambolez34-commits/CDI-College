@@ -12,7 +12,7 @@ import { ErreurMetier } from "./college";
 export async function enregistrerPassages(
   collegeId: string,
   userId: string | null,
-  d: { eleveIds: string[]; motifId: string; typePlage: string; instant: Instant },
+  d: { eleveIds: string[]; motifId: string; typePlage: string; instant: Instant; projetId?: string | null },
 ) {
   const ids = [...new Set(d.eleveIds)];
   if (!ids.length) throw new ErreurMetier("Choisissez au moins un élève.");
@@ -27,8 +27,16 @@ export async function enregistrerPassages(
     .where(and(eq(schema.eleves.collegeId, collegeId), inArray(schema.eleves.id, ids)));
   if (valides.length !== ids.length) throw new ErreurMetier("Un des élèves n'appartient pas à ce collège.");
 
+  let projetId: string | null = null;
+  if (d.projetId) {
+    const [p] = await db.select({ id: schema.projets.id }).from(schema.projets)
+      .where(and(eq(schema.projets.id, d.projetId), eq(schema.projets.collegeId, collegeId)));
+    if (!p) throw new ErreurMetier("Ce projet n'existe pas.");
+    projetId = p.id;
+  }
+
   return db.insert(schema.passages).values(ids.map((eleveId) => ({
-    collegeId, eleveId, motifId: motif.id, typePlage, jour: d.instant.jour, minute: d.instant.minute, saisiPar: userId,
+    collegeId, eleveId, motifId: motif.id, typePlage, jour: d.instant.jour, minute: d.instant.minute, saisiPar: userId, projetId,
   }))).returning({ id: schema.passages.id });
 }
 
@@ -45,7 +53,7 @@ export async function annulerPassages(collegeId: string, ids: string[]) {
 export async function passagesDuJour(collegeId: string, jour: string) {
   return db.select({
     id: schema.passages.id, eleveId: schema.passages.eleveId, motifId: schema.passages.motifId,
-    typePlage: schema.passages.typePlage, minute: schema.passages.minute,
+    typePlage: schema.passages.typePlage, minute: schema.passages.minute, projetId: schema.passages.projetId,
   }).from(schema.passages)
     .where(and(eq(schema.passages.collegeId, collegeId), eq(schema.passages.jour, jour)))
     .orderBy(desc(schema.passages.minute), desc(schema.passages.createdAt));

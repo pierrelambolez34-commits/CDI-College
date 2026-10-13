@@ -5,7 +5,13 @@ import { ErreurMetier } from "@/lib/data/college";
 const id = z.string().uuid();
 
 export const schemas = {
-  enregistrer: z.object({ eleveIds: z.array(id).min(1).max(60), motifId: id, typePlage: z.string().max(60) }),
+  enregistrer: z.object({ eleveIds: z.array(id).min(1).max(60), motifId: id, typePlage: z.string().max(60), projetId: id.nullable().optional() }),
+  groupe: z.object({ nom: z.string().max(80), description: z.string().max(400), eleveIds: z.array(id).max(600) }),
+  projet: z.object({
+    nom: z.string().max(100), description: z.string().max(2500), partenaires: z.string().max(400),
+    debut: z.string().max(10), fin: z.string().max(10).nullable(), classes: z.array(z.string().max(20)).max(60), groupeIds: z.array(id).max(60),
+  }),
+  id,
   annuler: z.array(id).max(60),
   horaires: z.object({
     types: z.array(z.string().max(40)).max(12),

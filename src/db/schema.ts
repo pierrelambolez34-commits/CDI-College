@@ -6,7 +6,7 @@
  * colonne (voir src/lib/session.ts et les fichiers src/lib/data/*).
  */
 import {
-  pgTable, uuid, text, smallint, integer, boolean, timestamp, date, pgEnum, index, uniqueIndex,
+  pgTable, uuid, text, smallint, integer, boolean, timestamp, date, pgEnum, index, uniqueIndex, primaryKey,
 } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("role", ["superadmin", "admin", "utilisateur"]);
@@ -100,10 +100,13 @@ export const passages = pgTable("passages", {
   jour: date("jour", { mode: "string" }).notNull(),
   minute: integer("minute").notNull(),
   saisiPar: uuid("saisi_par").references(() => users.id, { onDelete: "set null" }),
+  /** Projet du CDI auquel ce passage est rattaché (facultatif). */
+  projetId: uuid("projet_id").references(() => projets.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   index("passages_college_jour_idx").on(t.collegeId, t.jour),
   index("passages_eleve_idx").on(t.eleveId),
+  index("passages_projet_idx").on(t.projetId),
 ]);
 
 export const statutDemandeEnum = pgEnum("statut_demande", ["en_attente", "acceptee", "refusee"]);
@@ -133,3 +136,38 @@ export const jetons = pgTable("jetons", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   utiliseLe: timestamp("utilise_le", { withTimezone: true }),
 });
+
+/** Groupe d'élèves (club, atelier, demi-groupe…) : se sélectionne d'un coup à la saisie et filtre les statistiques. */
+export const groupes = pgTable("groupes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  collegeId: uuid("college_id").notNull().references(() => colleges.id, { onDelete: "cascade" }),
+  nom: text("nom").notNull(),
+  description: text("description").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("groupes_college_idx").on(t.collegeId)]);
+
+export const groupeEleves = pgTable("groupe_eleves", {
+  groupeId: uuid("groupe_id").notNull().references(() => groupes.id, { onDelete: "cascade" }),
+  eleveId: uuid("eleve_id").notNull().references(() => eleves.id, { onDelete: "cascade" }),
+}, (t) => [primaryKey({ columns: [t.groupeId, t.eleveId] }), index("groupe_eleves_eleve_idx").on(t.eleveId)]);
+
+/** Projet du CDI (prix littéraire, semaine de la presse, exposition…), avec ses participants et ses passages. */
+export const projets = pgTable("projets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  collegeId: uuid("college_id").notNull().references(() => colleges.id, { onDelete: "cascade" }),
+  nom: text("nom").notNull(),
+  description: text("description").notNull().default(""),
+  /** Enseignants ou partenaires associés, en texte libre. */
+  partenaires: text("partenaires").notNull().default(""),
+  debut: date("debut", { mode: "string" }).notNull(),
+  /** Vide = projet sans date de fin. */
+  fin: date("fin", { mode: "string" }),
+  /** Classes participantes (ex. 4B, 4C). */
+  classes: text("classes").array().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("projets_college_idx").on(t.collegeId)]);
+
+export const projetGroupes = pgTable("projet_groupes", {
+  projetId: uuid("projet_id").notNull().references(() => projets.id, { onDelete: "cascade" }),
+  groupeId: uuid("groupe_id").notNull().references(() => groupes.id, { onDelete: "cascade" }),
+}, (t) => [primaryKey({ columns: [t.projetId, t.groupeId] })]);

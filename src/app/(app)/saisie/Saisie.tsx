@@ -9,21 +9,29 @@ import { normaliser, formatMinute } from "@/lib/texte";
 import { instantParis, plageEnCours, type PlageSimple } from "@/lib/temps";
 import { actionAnnuler, actionEnregistrer } from "./actions";
 import EnTete, { TeteCarte } from "@/components/EnTete";
+import Icone from "@/components/Icone";
 
 type Eleve = { id: string; nom: string; prenom: string; division: string };
 type Motif = { id: string; libelle: string; ordre: number };
-type Passage = { id: string; eleveId: string; motifId: string; typePlage: string; minute: number };
-type Resultat = { groupe: string; ids: string[] } | { eleve: Eleve };
+type Passage = { id: string; eleveId: string; motifId: string; typePlage: string; minute: number; projetId?: string | null };
+/** Un résultat de recherche : une classe entière, un groupe d'élèves, ou un élève. */
+type Resultat = { groupe: string; ids: string[]; sorte: "classe" | "groupe" } | { eleve: Eleve };
+type Groupe = { id: string; nom: string; eleveIds: string[] };
+type Projet = { id: string; nom: string };
 
 type Props = {
   eleves: Eleve[]; motifs: Motif[]; plages: PlageSimple[]; types: string[];
   passagesInitiaux: Passage[]; habitudes: Record<string, string>; jour: string; instantInitial: ReturnType<typeof instantParis>;
+  groupes: Groupe[]; projets: Projet[];
 };
 
 const HORS = "Hors horaires";
 const couleur = (ordre: number) => `var(--s${Math.min(Math.max(ordre, 1), 8)})`;
 
-export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux, habitudes: habInit, jour, instantInitial }: Props) {
+export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux, habitudes: habInit, jour, instantInitial, groupes, projets }: Props) {
+  // Projet choisi : il reste actif d'un élève à l'autre (une séance de projet), jusqu'à ce qu'on le change.
+  const [projetId, setProjetId] = useState<string | null>(null);
+  const projet = projets.find((p) => p.id === projetId) ?? null;
   const [instant, setInstant] = useState(instantInitial);
   const [recherche, setRecherche] = useState("");
   const [selection, setSelection] = useState<string[]>([]);
@@ -67,7 +75,14 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
     const div = divisions.find((d) => d.toLowerCase() === q.replace(/\s/g, ""));
     if (div) {
       const ids = eleves.filter((e) => e.division === div && !selection.includes(e.id)).map((e) => e.id);
-      if (ids.length) out.push({ groupe: div, ids });
+      if (ids.length) out.push({ groupe: div, ids, sorte: "classe" });
+    }
+    // Groupes d'élèves dont le nom contient ce qui est tapé
+    for (const g of groupes) {
+      if (!normaliser(g.nom).includes(q)) continue;
+      const ids = g.eleveIds.filter((id) => !selection.includes(id) && parId.has(id));
+      if (ids.length) out.push({ groupe: g.nom, ids, sorte: "groupe" });
+      if (out.length >= 3) break;
     }
     for (const x of index) {
       if (selection.includes(x.e.id)) continue;
@@ -76,7 +91,7 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
       if (out.length >= (div ? 6 : 7)) break;
     }
     return out;
-  }, [recherche, index, divisions, eleves, selection]);
+  }, [recherche, index, divisions, eleves, selection, groupes, parId]);
   useEffect(() => setSurligne(0), [recherche]);
 
   const motifSuggere = useMemo(() => {
@@ -109,15 +124,15 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
     const tempIds = eleveIds.map((_, i) => `tmp-${Date.now()}-${i}`);
     const avant = Object.fromEntries(eleveIds.map((id) => [id, habitudes[id]]));
     // Affichage immédiat, sans attendre le serveur
-    setPassages((p) => [...eleveIds.map((eleveId, i) => ({ id: tempIds[i], eleveId, motifId, typePlage: typeActuel, minute: instant.minute })), ...p]);
+    setPassages((p) => [...eleveIds.map((eleveId, i) => ({ id: tempIds[i], eleveId, motifId, typePlage: typeActuel, minute: instant.minute, projetId })), ...p]);
     setHabitudes((h) => ({ ...h, ...Object.fromEntries(eleveIds.map((id) => [id, motifId])) }));
     setSelection([]);
     setRecherche("");
     const e0 = parId.get(eleveIds[0]);
     const qui = eleveIds.length === 1 && e0 ? `${e0.prenom} ${e0.nom}` : `${eleveIds.length} élèves`;
-    afficher(`${qui} · ${motif.libelle} · enregistré`, true);
+    afficher(`${qui} · ${motif.libelle}${projet ? ` · ${projet.nom}` : ""} · enregistré`, true);
 
-    const promesse = actionEnregistrer({ eleveIds, motifId, typePlage: typeActuel }).then((r) => {
+    const promesse = actionEnregistrer({ eleveIds, motifId, typePlage: typeActuel, projetId }).then((r) => {
       if (!r.ok || !r.donnees) {
         setPassages((p) => p.filter((x) => !tempIds.includes(x.id)));
         setHabitudes((h) => ({ ...h, ...avant }));
@@ -155,6 +170,13 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
     champ.current?.focus();
   }
 
+  function changerProjet() {
+    if (!projets.length) return;
+    const liste = [null, ...projets.map((p) => p.id)];
+    setProjetId(liste[(liste.indexOf(projetId) + 1) % liste.length]);
+    champ.current?.focus();
+  }
+
   function changerType() {
     const liste = plage ? types : [HORS, ...types];
     const i = liste.indexOf(typeActuel);
@@ -184,6 +206,7 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
   useEffect(() => {
     const f = (ev: KeyboardEvent) => {
       if (ev.key === "F2") { ev.preventDefault(); changerType(); }
+      else if (ev.key === "F3") { ev.preventDefault(); changerProjet(); }
       else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z" && document.activeElement !== champ.current) { ev.preventDefault(); annuler(); }
     };
     window.addEventListener("keydown", f);
@@ -202,7 +225,7 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
       <li key={p.id}>
         <span className="h">{formatMinute(p.minute)}</span>
         <span className="who">{e ? `${e.prenom} ${e.nom}` : "Élève archivé"} <small>{e?.division}</small></span>
-        {m && <span className="pill" style={{ "--c": couleur(m.ordre) } as React.CSSProperties}>{m.libelle}</span>}
+        {m && <span className="pill" style={{ "--c": couleur(m.ordre) } as React.CSSProperties} title={p.projetId ? `Projet : ${projets.find((x) => x.id === p.projetId)?.nom ?? ""}` : undefined}>{p.projetId ? "★ " : ""}{m.libelle}</span>}
       </li>
     );
   };
@@ -230,6 +253,11 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
               {typeActuel} <span className="auto">{plage ? `${formatMinute(plage.debut)}–${formatMinute(plage.fin)}` : "CDI normalement fermé"}{typeForce ? " · modifié" : ""}</span>
             </button>
             <span className="hint">Déduit de l&apos;heure · <kbd>F2</kbd> pour corriger</span>
+            {projets.length > 0 && (
+              <button type="button" className={`projet-choix ${projet ? "actif" : ""}`} onClick={changerProjet} title="Rattacher les passages à un projet (F3)">
+                <Icone nom="etincelles" taille={15} />{projet ? `Projet : ${projet.nom}` : "Aucun projet"} <kbd>F3</kbd>
+              </button>
+            )}
           </div>
 
           <label htmlFor="recherche" className="muted small">Élève(s) qui entre(nt)</label>
@@ -240,14 +268,17 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
               </span>); })}
             <input id="recherche" ref={champ} value={recherche} onChange={(e) => setRecherche(e.target.value)} onKeyDown={clavier}
               autoComplete="off" spellCheck={false} autoFocus aria-autocomplete="list" aria-controls="resultats"
-              placeholder={selection.length ? "Ajouter un autre élève, ou tapez le motif (1–8)" : "Nom, prénom ou classe (ex. « mar », « 5C »)…"} />
+              placeholder={selection.length ? "Ajouter un autre élève, ou tapez le motif (1–8)" : groupes.length ? "Nom, prénom, classe ou groupe…" : "Nom, prénom ou classe (ex. « mar », « 5C »)…"} />
           </div>
           {recherche.trim() && (
             <ul className="results" id="resultats" role="listbox">
               {resultats.length === 0 && <li className="empty">Aucun élève trouvé. Vérifiez l&apos;orthographe ou tapez la classe.</li>}
               {resultats.map((r, i) => "groupe" in r ? (
-                <li key={`g${r.groupe}`} className={`group ${i === surligne ? "hi" : ""}`} role="option" aria-selected={i === surligne} onMouseDown={(e) => { e.preventDefault(); choisir(i); }}>
-                  <span className="div">{r.groupe}</span><span className="nm">Toute la {r.groupe}</span><span className="tag">{r.ids.length} élèves</span>
+                <li key={`${r.sorte}${r.groupe}`} className={`group ${r.sorte === "groupe" ? "groupe-res" : ""} ${i === surligne ? "hi" : ""}`} role="option" aria-selected={i === surligne} onMouseDown={(e) => { e.preventDefault(); choisir(i); }}>
+                  {r.sorte === "classe"
+                    ? <><span className="div">{r.groupe}</span><span className="nm">Toute la {r.groupe}</span></>
+                    : <><span className="div"><Icone nom="equipe" taille={15} /></span><span className="nm">Groupe « {r.groupe} »</span></>}
+                  <span className="tag">{r.ids.length} élève{r.ids.length > 1 ? "s" : ""}</span>
                 </li>
               ) : (
                 <li key={r.eleve.id} className={i === surligne ? "hi" : ""} role="option" aria-selected={i === surligne} onMouseDown={(e) => { e.preventDefault(); choisir(i); }}>
@@ -285,6 +316,7 @@ export default function Saisie({ eleves, motifs, plages, types, passagesInitiaux
             <span><kbd>⌫</kbd> retirer le dernier élève</span>
             <span><kbd>Échap</kbd> tout effacer</span>
             <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> annuler</span>
+            {projets.length > 0 && <span><kbd>F3</kbd> projet en cours</span>}
           </div>
         </section>
 

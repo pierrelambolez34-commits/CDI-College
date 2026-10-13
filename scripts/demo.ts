@@ -11,6 +11,8 @@ import { eq, inArray, or } from "drizzle-orm";
 import { db, schema, sql } from "../src/db";
 import { creerCollege, lireMotifs, lirePlages } from "../src/lib/data/college";
 import { importerEleves } from "../src/lib/data/eleves";
+import { creerGroupe } from "../src/lib/data/groupes";
+import { creerProjet } from "../src/lib/data/projets";
 import { instantParis } from "../src/lib/temps";
 
 const UAI = "0999999Z";
@@ -105,11 +107,39 @@ async function main() {
   }
   for (let i = 0; i < passages.length; i += 1000) await db.insert(schema.passages).values(passages.slice(i, i + 1000));
 
+  // Groupes d'élèves et projets de démonstration
+  const de = (div: string) => eleves.filter((e) => e.division === div);
+  const auHasard = <T,>(a: T[], n: number) => [...a].sort(() => hasard() - .5).slice(0, n);
+  const manga = await creerGroupe(college.id, { nom: "Club manga", description: "Le jeudi midi", eleveIds: auHasard(eleves.filter((e) => e.niveau === "5e" || e.niveau === "4e"), 14).map((e) => e.id) });
+  const lecture = await creerGroupe(college.id, { nom: "Club lecture", description: "Le mardi midi", eleveIds: auHasard(eleves.filter((e) => e.niveau === "6e"), 11).map((e) => e.id) });
+  await creerGroupe(college.id, { nom: "Demi-groupe 4B – Mme Durand", description: "Recherche documentaire en histoire", eleveIds: de("4B").slice(0, 15).map((e) => e.id) });
+  const debutAnnee = new Date(aujourdHui); debutAnnee.setDate(debutAnnee.getDate() - 45);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const prix = await creerProjet(college.id, {
+    nom: "Prix des Incorruptibles", description: "Lire la sélection de romans et voter pour son préféré en mai.", partenaires: "Mme Martin (français)",
+    debut: iso(debutAnnee), fin: `${Number(iso(aujourdHui).slice(0, 4)) + 1}-05-31`, classes: ["6A", "6B"], groupeIds: [lecture.id],
+  });
+  const expoDebut = new Date(aujourdHui); expoDebut.setDate(expoDebut.getDate() - 30);
+  const expoFin = new Date(aujourdHui); expoFin.setDate(expoFin.getDate() - 12);
+  const expo = await creerProjet(college.id, {
+    nom: "Exposition « Bien vivre ensemble »", description: "Affiches réalisées par les 4B sur le harcèlement.", partenaires: "Mme Durand, CPE",
+    debut: iso(expoDebut), fin: iso(expoFin), classes: ["4B"], groupeIds: [],
+  });
+  await creerProjet(college.id, {
+    nom: "Semaine de la presse", description: "Atelier fausses informations avec un journaliste.", partenaires: "M. Petit (EMC)",
+    debut: `${Number(iso(aujourdHui).slice(0, 4)) + 1}-03-16`, fin: `${Number(iso(aujourdHui).slice(0, 4)) + 1}-03-21`, classes: ["3A", "3B"], groupeIds: [manga.id],
+  });
+  // Une partie des passages existants est rattachée aux projets
+  await sql`UPDATE passages p SET projet_id = ${prix.id} FROM eleves e
+    WHERE e.id = p.eleve_id AND p.college_id = ${college.id} AND (e.division IN ('6A','6B')) AND random() < 0.35`;
+  await sql`UPDATE passages p SET projet_id = ${expo.id} FROM eleves e
+    WHERE e.id = p.eleve_id AND p.college_id = ${college.id} AND e.division = '4B' AND p.jour BETWEEN ${iso(expoDebut)} AND ${iso(expoFin)} AND p.projet_id IS NULL`;
+
   await db.insert(schema.users).values({
     collegeId: college.id, email: "assistant@exemple.fr", nom: "Assistant d'éducation", role: "utilisateur",
     passwordHash: (await import("bcryptjs")).default.hashSync("demonstration", 10),
   });
-  console.log(`Collège de démonstration prêt : ${eleves.length} élèves, ${passages.length} passages.`);
+  console.log(`Collège de démonstration prêt : ${eleves.length} élèves, ${passages.length} passages, 3 groupes, 3 projets.`);
   console.log("Connexion : demo@exemple.fr / demonstration (administrateur)");
   console.log("            assistant@exemple.fr / demonstration (saisie et statistiques uniquement)");
   await sql.end();

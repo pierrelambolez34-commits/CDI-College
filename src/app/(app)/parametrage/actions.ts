@@ -7,6 +7,8 @@ import {
   ajouterCompte, avancerAccueil, enregistrerHoraires, enregistrerMotifs, modifierEtablissement, supprimerCompte,
 } from "@/lib/data/college";
 import { importerEleves, type EleveImporte } from "@/lib/data/eleves";
+import { creerGroupe, modifierGroupe, supprimerGroupe } from "@/lib/data/groupes";
+import { creerProjet, modifierProjet, supprimerProjet, type ProjetSaisi } from "@/lib/data/projets";
 import type { PlageSaisie } from "@/lib/horaires";
 import { utilisateurCollege } from "@/lib/session";
 import { schemas, verifier } from "@/lib/validation";
@@ -80,4 +82,46 @@ export async function actionSupprimerCompte(id: string) {
 export async function actionTerminerAccueil() {
   const u = await admin();
   await suite(u.collegeId, 5);
+}
+
+/* ---------- Groupes d'élèves ---------- */
+export async function actionCreerGroupe(_: unknown, f: FormData) {
+  const u = await admin();
+  const r = await executer(() => creerGroupe(u.collegeId, { nom: String(f.get("nom") ?? ""), description: String(f.get("description") ?? "") }));
+  if (r.ok && r.donnees) { revalidatePath("/parametrage/groupes"); redirect(`/parametrage/groupes/${r.donnees.id}`); }
+  return r.ok ? { ok: true as const } : r;
+}
+
+export async function actionModifierGroupe(groupeId: string, d: { nom: string; description: string; eleveIds: string[] }) {
+  const u = await admin();
+  const r = await executer(() => { const v = verifier(schemas.groupe, d); return modifierGroupe(u.collegeId, verifier(schemas.id, groupeId), v); }, "Groupe enregistré.");
+  revalidatePath("/parametrage/groupes"); revalidatePath("/saisie");
+  return r;
+}
+
+export async function actionSupprimerGroupe(groupeId: string) {
+  const u = await admin();
+  const r = await executer(() => supprimerGroupe(u.collegeId, verifier(schemas.id, groupeId)));
+  if (r.ok) { revalidatePath("/parametrage/groupes"); redirect("/parametrage/groupes"); }
+  return r;
+}
+
+/* ---------- Projets du CDI ---------- */
+export async function actionEnregistrerProjet(projetId: string | null, d: ProjetSaisi) {
+  const u = await admin();
+  const r = await executer(async () => {
+    const v = verifier(schemas.projet, d);
+    if (projetId) { await modifierProjet(u.collegeId, verifier(schemas.id, projetId), v); return projetId; }
+    return (await creerProjet(u.collegeId, v)).id;
+  }, "Projet enregistré.");
+  revalidatePath("/parametrage/projets"); revalidatePath("/saisie");
+  if (r.ok && !projetId && r.donnees) redirect(`/parametrage/projets/${r.donnees}`);
+  return r;
+}
+
+export async function actionSupprimerProjet(projetId: string) {
+  const u = await admin();
+  const r = await executer(() => supprimerProjet(u.collegeId, verifier(schemas.id, projetId)));
+  if (r.ok) { revalidatePath("/parametrage/projets"); redirect("/parametrage/projets"); }
+  return r;
 }

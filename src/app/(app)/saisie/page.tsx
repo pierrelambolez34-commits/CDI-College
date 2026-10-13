@@ -2,6 +2,8 @@ import Link from "next/link";
 import { lireCollege, lireMotifs, lirePlages } from "@/lib/data/college";
 import { listerElevesActifs } from "@/lib/data/eleves";
 import { motifsHabituels, passagesDuJour } from "@/lib/data/passages";
+import { groupesPourSaisie } from "@/lib/data/groupes";
+import { projetsEnCours } from "@/lib/data/projets";
 import { utilisateurCollege } from "@/lib/session";
 import { instantParis } from "@/lib/temps";
 import Saisie from "./Saisie";
@@ -13,9 +15,10 @@ export default async function PageSaisie() {
   const u = await utilisateurCollege();
   const instant = instantParis();
   const { jour } = instant;
-  const [college, eleves, motifs, plages, passages, habitudes] = await Promise.all([
+  const [college, eleves, motifs, plages, passages, habitudes, groupes, projets] = await Promise.all([
     lireCollege(u.collegeId), listerElevesActifs(u.collegeId), lireMotifs(u.collegeId),
     lirePlages(u.collegeId), passagesDuJour(u.collegeId, jour), motifsHabituels(u.collegeId),
+    groupesPourSaisie(u.collegeId), projetsEnCours(u.collegeId, jour),
   ]);
 
   if (!eleves.length) {
@@ -39,6 +42,8 @@ export default async function PageSaisie() {
       habitudes={habitudes}
       jour={jour}
       instantInitial={instant}
+      groupes={groupes}
+      projets={projets.map((p) => ({ id: p.id, nom: p.nom }))}
     />
   );
 }

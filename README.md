@@ -7,8 +7,13 @@ Elle est **multi-collèges** : chaque collège a ses propres élèves, horaires,
 |---|---|---|
 | **Saisie** | tous les comptes du collège | Déclarer l'entrée d'un élève en 3 touches : quelques lettres, Entrée, chiffre du motif |
 | **Statistiques** | tous les comptes du collège | Motifs, moments de fréquentation, évolution, élèves touchés, export CSV |
-| **Paramétrage** | administrateurs du collège | Établissement, horaires du CDI, motifs, import des élèves, comptes |
+| **Paramétrage** | administrateurs du collège | Établissement, horaires du CDI, motifs, import des élèves, groupes d'élèves, projets du CDI, comptes |
 | **Collèges** (`/admin`) | super-administrateur (toi) | Suivre les collèges inscrits (activation, mise en route, utilisation) |
+
+## Groupes et projets
+
+- **Groupes d'élèves** (Paramétrage → Groupes d'élèves) : un club, un atelier, un demi-groupe envoyé par un enseignant. À la saisie, taper le nom du groupe sélectionne tous ses élèves d'un coup. Dans les statistiques, le filtre « Groupe » limite tous les graphiques à ses membres.
+- **Projets du CDI** (Paramétrage → Projets du CDI) : nom, dates, description, enseignants et partenaires, classes et groupes participants. À la saisie, la touche **F3** choisit le projet en cours ; il reste actif d'un élève à l'autre jusqu'à ce qu'on le change. Chaque projet a son bilan (passages, élèves, part des participants venus, motifs, classes, semaines) et un filtre « Projet » dans les statistiques. Supprimer un projet garde ses passages dans les statistiques générales.
 
 ## Comment un nouveau collège arrive
 
@@ -68,7 +73,7 @@ Elle remplace aussitôt l'illustration du hero et de l'écran de connexion. Util
 | Commande | Effet |
 |---|---|
 | `npm run dev` | Lance l'application en mode développement (elle se recharge à chaque modification) |
-| `npm test` | Lance les tests automatiques (20 tests : cloisonnement entre collèges, inscription et mise en route d'un collège…) |
+| `npm test` | Lance les tests automatiques (22 tests : cloisonnement entre collèges, groupes et projets, inscription et mise en route d'un collège…) |
 | `npm run typecheck` | Vérifie le code TypeScript sans le lancer |
 | `npm run build` puis `npm start` | Version de production |
 | `npm run db:generate` | Après une modification de `src/db/schema.ts` : crée le fichier de migration |
@@ -85,7 +90,9 @@ src/
     data/college.ts       Collèges, horaires, motifs, comptes
     data/eleves.ts        Import annuel des élèves
     data/passages.ts      Enregistrement et annulation des passages
-    data/stats.ts         Calcul des statistiques et export CSV
+    data/stats.ts         Calcul des statistiques (filtres groupe et projet) et export CSV
+    data/groupes.ts       Groupes d'élèves (clubs, ateliers, demi-groupes)
+    data/projets.ts       Projets du CDI : fiche, participants, bilan
     data/demandes.ts      Inscription d'un collège, e-mail d'activation, choix du mot de passe
     email.ts              Envoi des e-mails (SMTP), modèle de mise en page
     photo.ts              Photo de la page d'accueil (ou illustration par défaut)

@@ -6,7 +6,7 @@ import { instantParis } from "@/lib/temps";
 import { schemas, verifier } from "@/lib/validation";
 
 /** Enregistre l'entrée d'un ou plusieurs élèves. L'heure est celle du serveur (heure de Paris). */
-export async function actionEnregistrer(d: { eleveIds: string[]; motifId: string; typePlage: string }) {
+export async function actionEnregistrer(d: { eleveIds: string[]; motifId: string; typePlage: string; projetId?: string | null }) {
   const u = await utilisateurCollege();
   const instant = instantParis();
   return executer(async () => {

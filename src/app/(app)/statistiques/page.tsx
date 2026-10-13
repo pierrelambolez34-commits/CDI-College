@@ -3,6 +3,9 @@ import { calculerStats, lireFiltres, type Filtres } from "@/lib/data/stats";
 import { utilisateurCollege } from "@/lib/session";
 import { JOURS, formatMinute } from "@/lib/texte";
 import Infobulles from "./Infobulles";
+import FiltreListe from "./FiltreListe";
+import { nomsGroupes } from "@/lib/data/groupes";
+import { listerProjets } from "@/lib/data/projets";
 import Icone from "@/components/Icone";
 import EnTete, { TeteCarte } from "@/components/EnTete";
 
@@ -17,7 +20,7 @@ const style = (o: Record<string, string | number>) => o as React.CSSProperties;
 export default async function Statistiques({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const u = await utilisateurCollege();
   const f = lireFiltres(await searchParams);
-  const s = await calculerStats(u.collegeId, f);
+  const [s, groupes, projets] = await Promise.all([calculerStats(u.collegeId, f), nomsGroupes(u.collegeId), listerProjets(u.collegeId)]);
 
   const lien = (changement: Partial<Filtres>) => {
     const n = { ...f, ...changement };
@@ -25,6 +28,8 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
     if (n.periode !== "annee") q.set("periode", n.periode);
     if (n.niveau !== "tous") q.set("niveau", n.niveau);
     if (n.type !== "tous") q.set("type", n.type);
+    if (n.groupe) q.set("groupe", n.groupe);
+    if (n.projet) q.set("projet", n.projet);
     return `?${q}`;
   };
   const filtre = (titre: string, cle: keyof Filtres, options: [string, string][]) => (
@@ -60,6 +65,18 @@ export default async function Statistiques({ searchParams }: { searchParams: Pro
         {filtre("Période", "periode", [["annee", "Année scolaire"], ["30", "30 derniers jours"], ["7", "Cette semaine"]])}
         {filtre("Niveau", "niveau", [["tous", "Tous"], ["6e", "6e"], ["5e", "5e"], ["4e", "4e"], ["3e", "3e"]])}
         {filtre("Type de plage", "type", [["tous", "Toutes"], ...s.types.map((t) => [t, t === "Pause méridienne" ? "Midi" : t === "Récréation" ? "Récré" : t] as [string, string])])}
+        {groupes.length > 0 && (
+          <FiltreListe id="filtre-groupe" titre="Groupe" valeur={f.groupe ?? ""} options={[
+            { valeur: "", label: "Tous les élèves", href: lien({ groupe: undefined }) },
+            ...groupes.map((g) => ({ valeur: g.id, label: g.nom, href: lien({ groupe: g.id }) })),
+          ]} />
+        )}
+        {projets.length > 0 && (
+          <FiltreListe id="filtre-projet" titre="Projet" valeur={f.projet ?? ""} options={[
+            { valeur: "", label: "Tous les passages", href: lien({ projet: undefined }) },
+            ...projets.map((p) => ({ valeur: p.id, label: p.nom, href: lien({ projet: p.id }) })),
+          ]} />
+        )}
       </div>
 
       {s.passages === 0 ? (

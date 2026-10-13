@@ -3,13 +3,38 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { instantParis } from "@/lib/temps";
 import { lireCollege, lireMotifs, lirePlages } from "./college";
+import { participeAuProjet } from "./projets";
 
-export type Filtres = { periode: "annee" | "30" | "7"; niveau: string; type: string };
+export type Filtres = { periode: "annee" | "30" | "7"; niveau: string; type: string; groupe?: string; projet?: string };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function lireFiltres(p: Record<string, string | string[] | undefined>): Filtres {
   const s = (k: string) => (typeof p[k] === "string" ? (p[k] as string) : "");
   const periode = ["annee", "30", "7"].includes(s("periode")) ? (s("periode") as Filtres["periode"]) : "annee";
-  return { periode, niveau: s("niveau") || "tous", type: s("type") || "tous" };
+  return {
+    periode, niveau: s("niveau") || "tous", type: s("type") || "tous",
+    groupe: UUID.test(s("groupe")) ? s("groupe") : undefined, projet: UUID.test(s("projet")) ? s("projet") : undefined,
+  };
+}
+
+/** Conditions sur les passages (alias p) et sur les élèves (alias e) qui découlent des filtres Groupe et Projet. */
+async function filtresAvances(collegeId: string, f: Filtres) {
+  const passages: SQL[] = [], eleves: SQL[] = [];
+  if (f.groupe) {
+    const [g] = await db.execute<{ id: string }>(sql`SELECT id FROM groupes WHERE id = ${f.groupe} AND college_id = ${collegeId}`);
+    const cond = g ? sql`e.id IN (SELECT eleve_id FROM groupe_eleves WHERE groupe_id = ${g.id})` : sql`false`;
+    passages.push(cond); eleves.push(cond);
+  }
+  if (f.projet) {
+    const [pr] = await db.execute<{ id: string; avec: boolean }>(sql`
+      SELECT id, (cardinality(classes) > 0 OR EXISTS (SELECT 1 FROM projet_groupes WHERE projet_id = projets.id)) AS avec
+      FROM projets WHERE id = ${f.projet} AND college_id = ${collegeId}`);
+    passages.push(pr ? sql`p.projet_id = ${pr.id}` : sql`false`);
+    // La population de référence devient celle des participants, si le projet en a
+    if (pr?.avec) eleves.push(participeAuProjet(pr.id));
+    if (!pr) eleves.push(sql`false`);
+  }
+  return { passages, eleves };
 }
 
 /** Date de début de la période (AAAA-MM-JJ). */
@@ -26,8 +51,10 @@ export async function calculerStats(collegeId: string, f: Filtres) {
   const depuis = debutPeriode(f.periode, college.anneeScolaire);
 
   // Conditions communes : collège + période + niveau (+ type de plage pour la plupart des graphiques)
-  const base: SQL[] = [sql`p.college_id = ${collegeId}`, sql`p.jour >= ${depuis}`];
+  const avance = await filtresAvances(collegeId, f);
+  const base: SQL[] = [sql`p.college_id = ${collegeId}`, sql`p.jour >= ${depuis}`, ...avance.passages];
   if (f.niveau !== "tous") base.push(sql`e.niveau = ${f.niveau}`);
+  const elevesEnPlus = avance.eleves.length ? sql` AND ${sql.join(avance.eleves, sql` AND `)}` : sql``;
   const avecType = f.type !== "tous" ? [...base, sql`p.type_plage = ${f.type}`] : base;
   const where = (c: SQL[]) => sql.join(c, sql` AND `);
   const depuisJoin = sql`FROM passages p JOIN eleves e ON e.id = p.eleve_id`;
@@ -51,14 +78,14 @@ export async function calculerStats(collegeId: string, f: Filtres) {
       SELECT to_char(date_trunc('week', p.jour), 'YYYY-MM-DD') AS semaine, count(*)::int AS n
       ${depuisJoin} WHERE ${where(avecType)} GROUP BY 1 ORDER BY 1`),
     db.execute<{ niveau: string; n: number }>(sql`
-      SELECT niveau, count(*)::int AS n FROM eleves WHERE college_id = ${collegeId} AND actif GROUP BY 1`),
+      SELECT e.niveau, count(*)::int AS n FROM eleves e WHERE e.college_id = ${collegeId} AND e.actif ${elevesEnPlus} GROUP BY 1`),
     db.execute<{ niveau: string; n: number }>(sql`
-      SELECT e.niveau, count(DISTINCT p.eleve_id)::int AS n ${depuisJoin} WHERE ${where(avecType)} AND e.actif GROUP BY 1`),
+      SELECT e.niveau, count(DISTINCT p.eleve_id)::int AS n ${depuisJoin} WHERE ${where(avecType)} AND e.actif ${elevesEnPlus} GROUP BY 1`),
     db.execute<{ division: string; n: number }>(sql`
       SELECT e.division, count(*)::int AS n FROM eleves e
-      WHERE e.college_id = ${collegeId} AND e.actif ${f.niveau !== "tous" ? sql`AND e.niveau = ${f.niveau}` : sql``}
+      WHERE e.college_id = ${collegeId} AND e.actif ${f.niveau !== "tous" ? sql`AND e.niveau = ${f.niveau}` : sql``} ${elevesEnPlus}
         AND NOT EXISTS (SELECT 1 FROM passages p WHERE p.eleve_id = e.id AND p.jour >= ${depuis}
-          ${f.type !== "tous" ? sql`AND p.type_plage = ${f.type}` : sql``})
+          ${f.type !== "tous" ? sql`AND p.type_plage = ${f.type}` : sql``} ${f.projet ? sql`AND p.projet_id = ${f.projet}` : sql``})
       GROUP BY 1`),
   ]);
 
@@ -83,7 +110,8 @@ export async function calculerStats(collegeId: string, f: Filtres) {
     motifs: motifs.map((m) => ({ id: m.id, libelle: m.libelle, ordre: m.ordre, actif: m.actif })),
     passages: t.passages,
     jours: t.jours,
-    elevesVenus: t.eleves,
+    // Élèves (actifs, dans la population de référence) venus au moins une fois : reste toujours ≤ population
+    elevesVenus: venus.filter((r) => f.niveau === "tous" || r.niveau === f.niveau).reduce((a, r) => a + r.n, 0),
     population: pop,
     parMotif: Object.fromEntries(parMotif.map((r) => [r.motif_id, r.n])) as Record<string, number>,
     parTypeMotif: parTypeMotif,
@@ -102,11 +130,12 @@ export type Stats = Awaited<ReturnType<typeof calculerStats>>;
 export async function lignesExport(collegeId: string, f: Filtres) {
   const college = await lireCollege(collegeId);
   const depuis = debutPeriode(f.periode, college.anneeScolaire);
-  const cond: SQL[] = [sql`p.college_id = ${collegeId}`, sql`p.jour >= ${depuis}`];
+  const avance = await filtresAvances(collegeId, f);
+  const cond: SQL[] = [sql`p.college_id = ${collegeId}`, sql`p.jour >= ${depuis}`, ...avance.passages];
   if (f.niveau !== "tous") cond.push(sql`e.niveau = ${f.niveau}`);
   if (f.type !== "tous") cond.push(sql`p.type_plage = ${f.type}`);
-  return db.execute<{ jour: string; minute: number; nom: string; prenom: string; division: string; niveau: string; type_plage: string; motif: string }>(sql`
-    SELECT to_char(p.jour, 'DD/MM/YYYY') AS jour, p.minute, e.nom, e.prenom, e.division, e.niveau, p.type_plage, m.libelle AS motif
-    FROM passages p JOIN eleves e ON e.id = p.eleve_id JOIN motifs m ON m.id = p.motif_id
+  return db.execute<{ jour: string; minute: number; nom: string; prenom: string; division: string; niveau: string; type_plage: string; motif: string; projet: string | null }>(sql`
+    SELECT to_char(p.jour, 'DD/MM/YYYY') AS jour, p.minute, e.nom, e.prenom, e.division, e.niveau, p.type_plage, m.libelle AS motif, pr.nom AS projet
+    FROM passages p JOIN eleves e ON e.id = p.eleve_id JOIN motifs m ON m.id = p.motif_id LEFT JOIN projets pr ON pr.id = p.projet_id
     WHERE ${sql.join(cond, sql` AND `)} ORDER BY p.jour, p.minute`);
 }

@@ -6,7 +6,7 @@ export default async function LayoutParametrage({ children }: { children: React.
   await utilisateurCollege({ admin: true });
   return (
     <main className="wrap">
-      <EnTete sur="Administration du CDI" icone="calendrier" titre="Paramétrage" intro="À faire une fois par an, à la rentrée : établissement, horaires, motifs, élèves et comptes." />
+      <EnTete sur="Administration du CDI" icone="calendrier" titre="Paramétrage" intro="Établissement, horaires, motifs et élèves à la rentrée ; groupes et projets tout au long de l'année." />
       <div className="param">
         <nav><MenuParametrage /></nav>
         <section className="panel">{children}</section>
